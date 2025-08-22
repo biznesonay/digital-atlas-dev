@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Object {
+  id                   String    @id @default(uuid())
+  infrastructureTypeId String
+  regionId             String
+  isPublished          Boolean   @default(false)
+  latitude             Float?
+  longitude            Float?
+  googleMapsUrl        String?
+  website              String?
+  contactPhones        Json?     // JSON array of strings
+  geocodingStatus      String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  translations       ObjectTranslation[]
+  priorityDirections ObjectPriorityDirection[]
+  infrastructureType InfrastructureType       @relation(fields: [infrastructureTypeId], references: [id])
+  region             Region                   @relation(fields: [regionId], references: [id])
+
+  @@index([regionId])
+  @@index([infrastructureTypeId])
+  @@index([isPublished, regionId, infrastructureTypeId])
+}
+
+model ObjectTranslation {
+  id           String  @id @default(uuid())
+  objectId     String
+  languageCode String  // ru/kz/en
+  name         String  @db.VarChar(1000)
+  address      String  @db.VarChar(1000)
+  isPublished  Boolean @default(false)
+
+  object Object @relation(fields: [objectId], references: [id], onDelete: Cascade)
+
+  @@unique([objectId, languageCode])
+  @@index([languageCode, name])
+}
+
+model InfrastructureType {
+  id          String @id @default(uuid())
+  code        String @unique
+  markerColor String
+  order       Int    @default(0)
+
+  translations InfrastructureTypeTranslation[]
+  objects      Object[]
+}
+
+model InfrastructureTypeTranslation {
+  id                   String @id @default(uuid())
+  infrastructureTypeId String
+  languageCode         String
+  name                 String
+
+  infrastructureType InfrastructureType @relation(fields: [infrastructureTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([infrastructureTypeId, languageCode])
+}
+
+model Region {
+  id    String @id @default(uuid())
+  code  String @unique
+  order Int    @default(0)
+
+  translations RegionTranslation[]
+  objects      Object[]
+}
+
+model RegionTranslation {
+  id           String @id @default(uuid())
+  regionId     String
+  languageCode String
+  name         String
+
+  region Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([regionId, languageCode])
+}
+
+model PriorityDirection {
+  id    String @id @default(uuid())
+  order Int    @default(0)
+
+  objects      ObjectPriorityDirection[]
+  translations PriorityDirectionTranslation[]
+}
+
+model PriorityDirectionTranslation {
+  id                  String @id @default(uuid())
+  priorityDirectionId String
+  languageCode        String
+  name                String
+
+  priorityDirection PriorityDirection @relation(fields: [priorityDirectionId], references: [id], onDelete: Cascade)
+
+  @@unique([priorityDirectionId, languageCode])
+}
+
+model ObjectPriorityDirection {
+  objectId            String
+  priorityDirectionId String
+  createdAt           DateTime @default(now())
+
+  object            Object            @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  priorityDirection PriorityDirection @relation(fields: [priorityDirectionId], references: [id], onDelete: Cascade)
+
+  @@id([objectId, priorityDirectionId])
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          Role      @default(EDITOR)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+enum Role {
+  SUPER_ADMIN
+  EDITOR
+}
