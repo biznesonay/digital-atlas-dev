@@ -196,135 +196,164 @@ export async function importObjects(fileData: string, filename: string): Promise
   let imported = 0
   let failed = 0
 
-  // Импорт в транзакции
-  await prisma.$transaction(async (tx) => {
-    for (const row of validation.rows) {
-      try {
-        // Получение ID типа и региона
-        const typeId = typeMap.get(row.type)
-        const regionId = regionMap.get(row.region)
 
-        if (!typeId) {
-          errors.push({
-            row: row.rowNumber,
-            field: 'type',
-            value: row.type,
-            message: `Тип инфраструктуры "${row.type}" не найден в системе`
-          })
-          failed++
-          continue
-        }
+  // Импорт по партиям
+  const batchSize = 100
+  const totalBatches = Math.ceil(validation.rows.length / batchSize)
 
-        if (!regionId) {
-          errors.push({
-            row: row.rowNumber,
-            field: 'region',
-            value: row.region,
-            message: `Регион "${row.region}" не найден в системе`
-          })
-          failed++
-          continue
-        }
+  for (let i = 0; i < validation.rows.length; i += batchSize) {
+    const batch = validation.rows.slice(i, i + batchSize)
+    const batchNumber = Math.floor(i / batchSize) + 1
 
-        // Парсинг направлений
-        const directionIds: string[] = []
-        if (row.directions) {
-          const directionNames = row.directions.split(',').map((d: string) => d.trim())
-          for (const name of directionNames) {
-            const dirId = directionMap.get(name)
-            if (dirId) {
-              directionIds.push(dirId)
-            } else {
+    console.log(`Обработка партии ${batchNumber}/${totalBatches}`)
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        for (const row of batch) {
+          try {
+            // Получение ID типа и региона
+            const typeId = typeMap.get(row.type)
+            const regionId = regionMap.get(row.region)
+
+            if (!typeId) {
               errors.push({
                 row: row.rowNumber,
-                field: 'directions',
-                value: name,
-                message: `Направление "${name}" не найдено в системе`
+                field: 'type',
+                value: row.type,
+                message: `Тип инфраструктуры "${row.type}" не найден в системе`
+              })
+              failed++
+              continue
+            }
+
+            if (!regionId) {
+              errors.push({
+                row: row.rowNumber,
+                field: 'region',
+                value: row.region,
+                message: `Регион "${row.region}" не найден в системе`
+              })
+              failed++
+              continue
+            }
+
+            // Парсинг направлений
+            const directionIds: string[] = []
+            if (row.directions) {
+              const directionNames = row.directions
+                .split(',')
+                .map((d: string) => d.trim())
+              for (const name of directionNames) {
+                const dirId = directionMap.get(name)
+                if (dirId) {
+                  directionIds.push(dirId)
+                } else {
+                  errors.push({
+                    row: row.rowNumber,
+                    field: 'directions',
+                    value: name,
+                    message: `Направление "${name}" не найдено в системе`
+                  })
+                }
+              }
+            }
+
+            // Парсинг телефонов
+            const phones = row.phones
+              ? row.phones
+                  .split(',')
+                  .map((p: string) => p.trim())
+                  .filter(Boolean)
+              : []
+
+            // Создание объекта
+            const object = await tx.object.create({
+              data: {
+                infrastructureTypeId: typeId,
+                regionId: regionId,
+                latitude: row.latitude,
+                longitude: row.longitude,
+                googleMapsUrl: row.googleMapsUrl || null,
+                website: row.website || null,
+                contactPhones: phones.length > 0 ? phones : null,
+                isPublished: false // По умолчанию не опубликован
+              }
+            })
+
+            // Создание переводов
+            const translations = []
+
+            // Русский (обязательный)
+            translations.push({
+              objectId: object.id,
+              languageCode: 'ru',
+              name: row.name_ru,
+              address: row.address_ru,
+              isPublished: false
+            })
+
+            // Казахский (опциональный)
+            if (row.name_kz && row.address_kz) {
+              translations.push({
+                objectId: object.id,
+                languageCode: 'kz',
+                name: row.name_kz,
+                address: row.address_kz,
+                isPublished: false
               })
             }
+
+            // Английский (опциональный)
+            if (row.name_en && row.address_en) {
+              translations.push({
+                objectId: object.id,
+                languageCode: 'en',
+                name: row.name_en,
+                address: row.address_en,
+                isPublished: false
+              })
+            }
+
+            await tx.objectTranslation.createMany({
+              data: translations
+            })
+
+            // Создание связей с направлениями
+            if (directionIds.length > 0) {
+              await tx.objectPriorityDirection.createMany({
+                data: directionIds.map(id => ({
+                  objectId: object.id,
+                  priorityDirectionId: id
+                }))
+              })
+            }
+
+            imported++
+          } catch (error: any) {
+            errors.push({
+              row: row.rowNumber,
+              field: 'general',
+              value: null,
+              message: `Ошибка создания объекта: ${error.message}`
+            })
+            failed++
           }
         }
-
-        // Парсинг телефонов
-        const phones = row.phones 
-          ? row.phones.split(',').map((p: string) => p.trim()).filter(Boolean)
-          : []
-
-        // Создание объекта
-        const object = await tx.object.create({
-          data: {
-            infrastructureTypeId: typeId,
-            regionId: regionId,
-            latitude: row.latitude,
-            longitude: row.longitude,
-            googleMapsUrl: row.googleMapsUrl || null,
-            website: row.website || null,
-            contactPhones: phones.length > 0 ? phones : null,
-            isPublished: false // По умолчанию не опубликован
-          }
-        })
-
-        // Создание переводов
-        const translations = []
-        
-        // Русский (обязательный)
-        translations.push({
-          objectId: object.id,
-          languageCode: 'ru',
-          name: row.name_ru,
-          address: row.address_ru,
-          isPublished: false
-        })
-
-        // Казахский (опциональный)
-        if (row.name_kz && row.address_kz) {
-          translations.push({
-            objectId: object.id,
-            languageCode: 'kz',
-            name: row.name_kz,
-            address: row.address_kz,
-            isPublished: false
-          })
-        }
-
-        // Английский (опциональный)
-        if (row.name_en && row.address_en) {
-          translations.push({
-            objectId: object.id,
-            languageCode: 'en',
-            name: row.name_en,
-            address: row.address_en,
-            isPublished: false
-          })
-        }
-
-        await tx.objectTranslation.createMany({
-          data: translations
-        })
-
-        // Создание связей с направлениями
-        if (directionIds.length > 0) {
-          await tx.objectPriorityDirection.createMany({
-            data: directionIds.map(id => ({
-              objectId: object.id,
-              priorityDirectionId: id
-            }))
-          })
-        }
-
-        imported++
-      } catch (error: any) {
+      })
+      console.log(`Партия ${batchNumber} успешно обработана`)
+    } catch (batchError: any) {
+      console.error(`Ошибка обработки партии ${batchNumber}: ${batchError.message}`)
+      for (const row of batch) {
         errors.push({
           row: row.rowNumber,
           field: 'general',
           value: null,
-          message: `Ошибка создания объекта: ${error.message}`
+          message: `Ошибка обработки партии: ${batchError.message}`
         })
         failed++
       }
     }
-  })
-
+  }
   revalidatePath('/api/objects')
   revalidatePath('/admin/objects')
 
