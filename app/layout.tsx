@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin', 'cyrillic'] })
+const geist = localFont({
+  src: './fonts/GeistVF.woff',
+  weight: '100 900',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Цифровой атлас инновационной инфраструктуры Казахстана',
@@ -37,7 +41,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <body className={inter.className}>
+      <body className={geist.className}>
         {children}
       </body>
     </html>

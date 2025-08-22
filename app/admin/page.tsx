@@ -1,7 +1,7 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Card,
@@ -19,10 +19,18 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { theme } from '@/lib/theme'
 
 export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
-  
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -73,13 +81,13 @@ export default function AdminLoginPage() {
                 Цифровой атлас инновационной инфраструктуры
               </Typography>
             </Box>
-            
+
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
-            
+
             <form onSubmit={handleSubmit}>
               <TextField
                 fullWidth
@@ -92,7 +100,7 @@ export default function AdminLoginPage() {
                 autoComplete="email"
                 autoFocus
               />
-              
+
               <TextField
                 fullWidth
                 label="Пароль"
@@ -103,7 +111,7 @@ export default function AdminLoginPage() {
                 required
                 autoComplete="current-password"
               />
-              
+
               <Button
                 fullWidth
                 type="submit"
@@ -116,7 +124,7 @@ export default function AdminLoginPage() {
                 {loading ? 'Вход...' : 'Войти'}
               </Button>
             </form>
-            
+
             <Box mt={3} p={2} bgcolor="grey.100" borderRadius={1}>
               <Typography variant="body2" color="text.secondary" align="center">
                 <strong>Тестовый доступ:</strong>
