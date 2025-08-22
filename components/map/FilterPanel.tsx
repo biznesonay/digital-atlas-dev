@@ -56,7 +56,7 @@ export default function FilterPanel({
   const [directions, setDirections] = useState<DictionaryItem[]>([])
   const [searchInput, setSearchInput] = useState(filters.search)
   const [showObjectsList, setShowObjectsList] = useState(false)
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
 
   const labels = {
     ru: {
