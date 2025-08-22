@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { objectSchema } from '@/lib/validation/object'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 // Получение списка объектов для админки
 export async function getAdminObjects(params?: {
@@ -20,7 +21,7 @@ export async function getAdminObjects(params?: {
   const limit = params?.limit || 50
   const skip = (page - 1) * limit
 
-  const where: any = {}
+  const where: Prisma.ObjectWhereInput = {}
   
   if (params?.search) {
     where.translations = {
@@ -134,7 +135,7 @@ export async function getAdminObject(id: string) {
 
 // Создание объекта
 export async function createObject(data: z.infer<typeof objectSchema>) {
-  await requireRole('EDITOR')
+  const session = await requireRole('EDITOR')
 
   const validatedData = objectSchema.parse(data)
 
@@ -144,6 +145,7 @@ export async function createObject(data: z.infer<typeof objectSchema>) {
       data: {
         infrastructureTypeId: validatedData.infrastructureTypeId,
         regionId: validatedData.regionId,
+        createdById: (session.user as any).id,
         latitude: validatedData.latitude,
         longitude: validatedData.longitude,
         googleMapsUrl: validatedData.googleMapsUrl,
@@ -301,23 +303,25 @@ export async function deleteObject(id: string) {
 export async function toggleObjectPublish(id: string) {
   await requireRole('EDITOR')
 
-  const object = await prisma.object.findUnique({
-    where: { id }
-  })
+  const result = await prisma.$transaction(async (tx) => {
+    const object = await tx.object.findUnique({
+      where: { id },
+      select: { isPublished: true }
+    })
 
-  if (!object) {
-    throw new Error('Объект не найден')
-  }
-
-  await prisma.object.update({
-    where: { id },
-    data: {
-      isPublished: !object.isPublished
+    if (!object) {
+      throw new Error('Объект не найден')
     }
+
+    return await tx.object.update({
+      where: { id },
+      data: { isPublished: !object.isPublished },
+      select: { isPublished: true }
+    })
   })
 
   revalidatePath('/api/objects')
   revalidatePath('/admin/objects')
 
-  return { success: true, isPublished: !object.isPublished }
+  return { success: true, isPublished: result.isPublished }
 }

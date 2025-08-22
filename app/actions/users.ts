@@ -13,9 +13,16 @@ const userSchema = z.object({
   role: z.enum(['SUPER_ADMIN', 'EDITOR'])
 })
 
+interface UpdateUserInput {
+  email: string
+  name: string
+  role: 'SUPER_ADMIN' | 'EDITOR'
+  password?: string
+}
+
 export async function getUsers() {
   await requireRole('SUPER_ADMIN')
-  
+
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
     select: {
@@ -27,18 +34,18 @@ export async function getUsers() {
       createdAt: true
     }
   })
-  
-  // Получаем статистику по объектам для каждого пользователя
+
+  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
   const usersWithStats = await Promise.all(
     users.map(async (user) => {
       const objectsCount = await prisma.object.count({
         where: {
-          createdAt: {
-            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // За последние 30 дней
-          }
+          createdById: user.id,
+          createdAt: { gte: monthAgo }
         }
       })
-      
+
       return {
         ...user,
         stats: {
@@ -47,7 +54,7 @@ export async function getUsers() {
       }
     })
   )
-  
+
   return usersWithStats
 }
 
@@ -132,7 +139,7 @@ export async function updateUser(id: string, data: z.infer<typeof userSchema>) {
     throw new Error('Пользователь с таким email уже существует')
   }
   
-  const updateData: any = {
+  const updateData: UpdateUserInput = {
     email: validated.email,
     name: validated.name,
     role: validated.role

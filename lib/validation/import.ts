@@ -46,7 +46,7 @@ export type ImportRow = z.infer<typeof importRowSchema>
 export type ImportFile = z.infer<typeof importFileSchema>
 
 // Функция для валидации и нормализации строки импорта
-export function validateImportRow(row: any, rowIndex: number): {
+export function validateImportRow(row: unknown, rowIndex: number): {
   valid: boolean
   data?: ImportRow
   errors?: Array<{ field: string; message: string }>
@@ -91,8 +91,8 @@ export const EXCEL_COLUMN_MAPPING = {
 export const TEMPLATE_COLUMNS = Object.keys(EXCEL_COLUMN_MAPPING)
 
 // Функция для преобразования строки Excel в объект для валидации
-export function mapExcelRow(excelRow: any): any {
-  const mappedRow: any = {}
+export function mapExcelRow(excelRow: Record<string, unknown>): Record<string, unknown> {
+  const mappedRow: Record<string, unknown> = {}
   
   for (const [excelKey, schemaKey] of Object.entries(EXCEL_COLUMN_MAPPING)) {
     if (excelRow[excelKey] !== undefined) {

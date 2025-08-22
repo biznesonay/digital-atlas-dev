@@ -2,6 +2,7 @@ import { NextAuthOptions, getServerSession } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt"
 import prisma from "./prisma"
+import logger from './logger'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -22,18 +23,18 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user) {
-            console.log(`Login attempt failed: user not found for ${credentials.email}`)
+            logger.warn('Login attempt failed: user not found')
             return null
           }
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
-          
+
           if (!isPasswordValid) {
-            console.log(`Login attempt failed: invalid password for ${credentials.email}`)
+            logger.warn('Login attempt failed: invalid password')
             return null
           }
 
-          console.log(`Successful login: ${user.email} (${user.role})`)
+          logger.info('Successful login')
 
           return {
             id: user.id,
@@ -42,7 +43,7 @@ export const authOptions: NextAuthOptions = {
             role: user.role
           }
         } catch (error) {
-          console.error('Auth error:', error)
+          logger.error('Auth error', error)
           return null
         }
       }
