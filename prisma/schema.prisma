@@ -11,6 +11,7 @@ model Object {
   id                   String    @id @default(uuid())
   infrastructureTypeId String
   regionId             String
+  createdById          String?
   isPublished          Boolean   @default(false)
   latitude             Float?
   longitude            Float?
@@ -25,9 +26,11 @@ model Object {
   priorityDirections ObjectPriorityDirection[]
   infrastructureType InfrastructureType       @relation(fields: [infrastructureTypeId], references: [id])
   region             Region                   @relation(fields: [regionId], references: [id])
+  createdBy          User?                    @relation(fields: [createdById], references: [id])
 
   @@index([regionId])
   @@index([infrastructureTypeId])
+  @@index([createdById])
   @@index([isPublished, regionId, infrastructureTypeId])
 }
 
@@ -124,6 +127,8 @@ model User {
   role          Role      @default(EDITOR)
   emailVerified DateTime?
   createdAt     DateTime  @default(now())
+
+  objects       Object[]
 }
 
 enum Role {
