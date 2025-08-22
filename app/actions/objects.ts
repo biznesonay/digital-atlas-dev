@@ -148,7 +148,7 @@ export async function createObject(data: z.infer<typeof objectSchema>) {
         longitude: validatedData.longitude,
         googleMapsUrl: validatedData.googleMapsUrl,
         website: validatedData.website,
-        contactPhones: validatedData.contactPhones,
+        contactPhones: validatedData.contactPhones ?? undefined,
         isPublished: validatedData.translations.ru.isPublished
       }
     })
@@ -227,7 +227,7 @@ export async function updateObject(id: string, data: z.infer<typeof objectSchema
         longitude: validatedData.longitude,
         googleMapsUrl: validatedData.googleMapsUrl,
         website: validatedData.website,
-        contactPhones: validatedData.contactPhones,
+        contactPhones: validatedData.contactPhones ?? undefined,
         isPublished: validatedData.translations.ru.isPublished
       }
     })
