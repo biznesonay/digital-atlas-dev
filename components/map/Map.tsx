@@ -126,6 +126,7 @@ export default function Map({ objects, loading, language }: MapProps) {
       if (clustererRef.current) {
         clustererRef.current.clearMarkers()
       }
+      mapRef.current = null
     }
   }, [])
 
@@ -134,41 +135,50 @@ export default function Map({ objects, loading, language }: MapProps) {
     setInfoWindowPosition(null)
   }
 
-  if (loading) {
-    return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
-        height="100%"
-        bgcolor="#f5f5f5"
-      >
-        <CircularProgress size={60} />
-      </Box>
-    )
-  }
-
   return (
-    <LoadScript 
+    <LoadScript
       googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
       libraries={['places']}
+      language={language}
+      region={language}
+      key={language}
     >
-      <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        zoom={5}
-        center={KAZAKHSTAN_CENTER}
-        options={DEFAULT_MAP_OPTIONS}
-        onLoad={onMapLoad}
-      >
-        {selectedObject && infoWindowPosition && (
-          <InfoWindow
-            position={infoWindowPosition}
-            onCloseClick={handleInfoWindowClose}
+      <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+        <GoogleMap
+          mapContainerStyle={mapContainerStyle}
+          zoom={5}
+          center={KAZAKHSTAN_CENTER}
+          options={DEFAULT_MAP_OPTIONS}
+          onLoad={onMapLoad}
+        >
+          {selectedObject && infoWindowPosition && (
+            <InfoWindow
+              position={infoWindowPosition}
+              onCloseClick={handleInfoWindowClose}
+            >
+              <MarkerInfo object={selectedObject} language={language} />
+            </InfoWindow>
+          )}
+        </GoogleMap>
+        {loading && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              bgcolor: 'rgba(255,255,255,0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1
+            }}
           >
-            <MarkerInfo object={selectedObject} language={language} />
-          </InfoWindow>
+            <CircularProgress size={60} />
+          </Box>
         )}
-      </GoogleMap>
+      </Box>
     </LoadScript>
   )
 }
