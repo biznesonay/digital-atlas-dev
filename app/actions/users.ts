@@ -31,18 +31,19 @@ export async function getUsers() {
   // Получаем статистику по объектам для каждого пользователя
   const usersWithStats = await Promise.all(
     users.map(async (user) => {
-      const objectsCount = await prisma.object.count({
+      const recentObjects = await prisma.object.count({
         where: {
+          createdById: user.id,
           createdAt: {
             gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // За последние 30 дней
           }
         }
       })
-      
+
       return {
         ...user,
         stats: {
-          recentObjects: objectsCount
+          recentObjects
         }
       }
     })

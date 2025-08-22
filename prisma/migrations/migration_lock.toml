@@ -1,0 +1,2 @@
+# This file should not be edited manually. It keeps track of Prisma migrations.
+provider = "postgresql"
