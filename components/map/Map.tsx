@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { GoogleMap, LoadScript, InfoWindow } from '@react-google-maps/api'
 import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer'
 import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER } from '@/lib/constants'
-import { CircularProgress, Box } from '@mui/material'
+import { CircularProgress, Box, Typography } from '@mui/material'
 import MarkerInfo from './MarkerInfo'
 
 interface MapProps {
@@ -50,6 +50,7 @@ export default function Map({ objects, loading, language }: MapProps) {
   const markersRef = useRef<google.maps.Marker[]>([])
   const [selectedObject, setSelectedObject] = useState<any | null>(null)
   const [infoWindowPosition, setInfoWindowPosition] = useState<google.maps.LatLng | null>(null)
+  const apiKey: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map
@@ -135,9 +136,17 @@ export default function Map({ objects, loading, language }: MapProps) {
     setInfoWindowPosition(null)
   }
 
+  if (!apiKey) {
+    return (
+      <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography>Google Maps API key is not configured</Typography>
+      </Box>
+    )
+  }
+
   return (
     <LoadScript
-      googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
+      googleMapsApiKey={apiKey}
       libraries={['places']}
       language={language}
       region={language}

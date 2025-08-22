@@ -125,15 +125,13 @@ function LoginForm() {
               </Button>
             </form>
 
-            <Box mt={3} p={2} bgcolor="grey.100" borderRadius={1}>
-              <Typography variant="body2" color="text.secondary" align="center">
-                <strong>Тестовый доступ:</strong>
-                <br />
-                Email: admin@digital-atlas.kz
-                <br />
-                Пароль: admin123
-              </Typography>
-            </Box>
+            {process.env.NEXT_PUBLIC_DEMO_CREDENTIALS && process.env.NODE_ENV !== 'production' && (
+              <Box mt={3} p={2} bgcolor="grey.100" borderRadius={1}>
+                <Typography variant="body2" color="text.secondary" align="center">
+                  {process.env.NEXT_PUBLIC_DEMO_CREDENTIALS}
+                </Typography>
+              </Box>
+            )}
           </Card>
         </Box>
       </Container>
