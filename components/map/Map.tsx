@@ -45,6 +45,8 @@ const createClusterRenderer = () => {
 }
 
 export default function Map({ objects, loading, language }: MapProps) {
+  const mapLang = language === 'kz' ? 'kk' : language
+
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
@@ -148,9 +150,9 @@ export default function Map({ objects, loading, language }: MapProps) {
     <LoadScript
       googleMapsApiKey={apiKey}
       libraries={['places']}
-      language={language}
-      region={language}
-      key={language}
+      language={mapLang}
+      region="KZ"
+      key={mapLang}
     >
       <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
         <GoogleMap
