@@ -130,23 +130,29 @@ export default function Map({ objects, loading, language }: MapProps) {
     }
   }, [objects, loading])
 
-  // Очистка при размонтировании
+  // Очистка перед загрузкой нового языка и при размонтировании
   useEffect(() => {
     return () => {
+      // Удаляем маркеры
       markersRef.current.forEach(marker => marker.setMap(null))
+      markersRef.current = []
+
+      // Очищаем кластеризатор
       if (clustererRef.current) {
         clustererRef.current.clearMarkers()
+        clustererRef.current = null
       }
-      mapRef.current = null
-    }
-  }, [])
 
-  // Удаление предыдущих скриптов Google Maps при смене языка
-  useEffect(() => {
-    return () => {
+      // Сбрасываем ссылку на карту
+      mapRef.current = null
+
+      // Удаляем скрипты Google Maps и глобальный объект
       document
         .querySelectorAll('script[src*="maps.googleapis"]')
         .forEach(script => script.remove())
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).google
     }
   }, [currentLang])
 
@@ -174,7 +180,6 @@ export default function Map({ objects, loading, language }: MapProps) {
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <GoogleMap
-        key={currentLang}
         mapContainerStyle={mapContainerStyle}
         zoom={5}
         center={KAZAKHSTAN_CENTER}
