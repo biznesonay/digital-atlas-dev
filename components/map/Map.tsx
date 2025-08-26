@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { GoogleMap, InfoWindow, useJsApiLoader } from '@react-google-maps/api'
+import { GoogleMap, LoadScript, InfoWindow } from '@react-google-maps/api'
 import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer'
 import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER } from '@/lib/constants'
 import { CircularProgress, Box, Typography } from '@mui/material'
@@ -45,22 +45,12 @@ const createClusterRenderer = () => {
 }
 
 export default function Map({ objects, loading, language }: MapProps) {
-  const currentLang = language === 'kz' ? 'kk' : language
-
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
   const [selectedObject, setSelectedObject] = useState<any | null>(null)
   const [infoWindowPosition, setInfoWindowPosition] = useState<google.maps.LatLng | null>(null)
   const apiKey: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-
-  const { isLoaded } = useJsApiLoader({
-    id: `google-map-script-${currentLang}`,
-    googleMapsApiKey: apiKey || '',
-    libraries: ['places'],
-    language: currentLang,
-    region: 'KZ',
-  })
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map
@@ -130,31 +120,16 @@ export default function Map({ objects, loading, language }: MapProps) {
     }
   }, [objects, loading])
 
-  // Очистка перед загрузкой нового языка и при размонтировании
+  // Очистка при размонтировании
   useEffect(() => {
     return () => {
-      // Удаляем маркеры
       markersRef.current.forEach(marker => marker.setMap(null))
-      markersRef.current = []
-
-      // Очищаем кластеризатор
       if (clustererRef.current) {
         clustererRef.current.clearMarkers()
-        clustererRef.current = null
       }
-
-      // Сбрасываем ссылку на карту
       mapRef.current = null
-
-      // Удаляем скрипты Google Maps и глобальный объект
-      document
-        .querySelectorAll('script[src*="maps.googleapis"]')
-        .forEach(script => script.remove())
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (window as any).google
     }
-  }, [currentLang])
+  }, [])
 
   const handleInfoWindowClose = () => {
     setSelectedObject(null)
@@ -169,50 +144,50 @@ export default function Map({ objects, loading, language }: MapProps) {
     )
   }
 
-  if (!isLoaded) {
-    return (
-      <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Box>
-    )
-  }
-
   return (
-    <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-      <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        zoom={5}
-        center={KAZAKHSTAN_CENTER}
-        options={DEFAULT_MAP_OPTIONS}
-        onLoad={onMapLoad}
-      >
-        {selectedObject && infoWindowPosition && (
-          <InfoWindow
-            position={infoWindowPosition}
-            onCloseClick={handleInfoWindowClose}
-          >
-            <MarkerInfo object={selectedObject} language={language} />
-          </InfoWindow>
-        )}
-      </GoogleMap>
-      {loading && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            bgcolor: 'rgba(255,255,255,0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1
-          }}
+    <LoadScript
+      googleMapsApiKey={apiKey}
+      libraries={['places']}
+      language={language}
+      region={language}
+      key={language}
+    >
+      <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+        <GoogleMap
+          mapContainerStyle={mapContainerStyle}
+          zoom={5}
+          center={KAZAKHSTAN_CENTER}
+          options={DEFAULT_MAP_OPTIONS}
+          onLoad={onMapLoad}
         >
-          <CircularProgress size={60} />
-        </Box>
-      )}
-    </Box>
+          {selectedObject && infoWindowPosition && (
+            <InfoWindow
+              position={infoWindowPosition}
+              onCloseClick={handleInfoWindowClose}
+            >
+              <MarkerInfo object={selectedObject} language={language} />
+            </InfoWindow>
+          )}
+        </GoogleMap>
+        {loading && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              bgcolor: 'rgba(255,255,255,0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1
+            }}
+          >
+            <CircularProgress size={60} />
+          </Box>
+        )}
+      </Box>
+    </LoadScript>
   )
 }
