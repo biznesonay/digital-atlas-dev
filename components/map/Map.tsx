@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { GoogleMap, LoadScript, InfoWindow } from '@react-google-maps/api'
+import { useEffect, useRef } from 'react'
+import loadGoogleMaps from '@/hooks/useGoogleMaps'
 import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer'
 import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER } from '@/lib/constants'
 import { CircularProgress, Box, Typography } from '@mui/material'
 import MarkerInfo from './MarkerInfo'
+import { createRoot, Root } from 'react-dom/client'
 
 interface MapProps {
   objects: any[]
@@ -13,15 +14,10 @@ interface MapProps {
   language: string
 }
 
-const mapContainerStyle = {
-  width: '100%',
-  height: '100%'
-}
-
 // Кастомный рендерер для кластеров
 const createClusterRenderer = () => {
   return {
-    render: ({ count, position }: any, stats: any) => {
+    render: ({ count, position }: any) => {
       const color = count < 10 ? '#1976D2' : count < 50 ? '#388E3C' : '#D32F2F'
       const size = count < 10 ? 40 : count < 50 ? 50 : 60
       
@@ -48,36 +44,83 @@ export default function Map({ objects, loading, language }: MapProps) {
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
-  const [selectedObject, setSelectedObject] = useState<any | null>(null)
-  const [infoWindowPosition, setInfoWindowPosition] = useState<google.maps.LatLng | null>(null)
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
+  const infoWindowRootRef = useRef<Root | null>(null)
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const apiKey: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-  const onMapLoad = useCallback((map: google.maps.Map) => {
-    mapRef.current = map
-    
-    // Установка границ Казахстана
-    const bounds = new google.maps.LatLngBounds(
-      new google.maps.LatLng(KAZAKHSTAN_BOUNDS.south, KAZAKHSTAN_BOUNDS.west),
-      new google.maps.LatLng(KAZAKHSTAN_BOUNDS.north, KAZAKHSTAN_BOUNDS.east)
-    )
-    map.fitBounds(bounds)
-  }, [])
+  useEffect(() => {
+    if (!apiKey) return
 
-  // Создание и обновление маркеров
+    let isMounted = true
+
+    loadGoogleMaps(language)
+      .then(() => {
+        if (!isMounted || !mapContainerRef.current) return
+
+        mapRef.current = new google.maps.Map(mapContainerRef.current, {
+          ...DEFAULT_MAP_OPTIONS,
+          center: KAZAKHSTAN_CENTER,
+          zoom: 5
+        })
+
+        const bounds = new google.maps.LatLngBounds(
+          new google.maps.LatLng(KAZAKHSTAN_BOUNDS.south, KAZAKHSTAN_BOUNDS.west),
+          new google.maps.LatLng(KAZAKHSTAN_BOUNDS.north, KAZAKHSTAN_BOUNDS.east)
+        )
+        mapRef.current.fitBounds(bounds)
+
+        infoWindowRef.current = new google.maps.InfoWindow()
+        infoWindowRef.current.addListener('closeclick', () => {
+          if (infoWindowRootRef.current) {
+            infoWindowRootRef.current.unmount()
+            infoWindowRootRef.current = null
+          }
+        })
+      })
+      .catch(err => {
+        console.error('Failed to load Google Maps', err)
+      })
+
+    return () => {
+      isMounted = false
+      markersRef.current.forEach(marker => marker.setMap(null))
+      markersRef.current = []
+      if (clustererRef.current) {
+        clustererRef.current.clearMarkers()
+        clustererRef.current = null
+      }
+      if (infoWindowRef.current) {
+        infoWindowRef.current.close()
+        infoWindowRef.current = null
+      }
+      if (infoWindowRootRef.current) {
+        infoWindowRootRef.current.unmount()
+        infoWindowRootRef.current = null
+      }
+      mapRef.current = null
+    }
+  }, [language, apiKey])
+
   useEffect(() => {
     if (!mapRef.current || loading) return
 
-    // Удаление старых маркеров
     markersRef.current.forEach(marker => marker.setMap(null))
     markersRef.current = []
 
-    // Удаление старого кластеризатора
     if (clustererRef.current) {
       clustererRef.current.clearMarkers()
       clustererRef.current = null
     }
 
-    // Создание новых маркеров
+    if (infoWindowRef.current) {
+      infoWindowRef.current.close()
+    }
+    if (infoWindowRootRef.current) {
+      infoWindowRootRef.current.unmount()
+      infoWindowRootRef.current = null
+    }
+
     const newMarkers: google.maps.Marker[] = []
     
     objects.forEach(obj => {
@@ -97,8 +140,18 @@ export default function Map({ objects, loading, language }: MapProps) {
       })
 
       marker.addListener('click', () => {
-        setSelectedObject(obj)
-        setInfoWindowPosition(marker.getPosition() || null)
+        if (!infoWindowRef.current) return
+
+        if (infoWindowRootRef.current) {
+          infoWindowRootRef.current.unmount()
+          infoWindowRootRef.current = null
+        }
+
+        const container = document.createElement('div')
+        infoWindowRootRef.current = createRoot(container)
+        infoWindowRootRef.current.render(<MarkerInfo object={obj} language={language} />)
+        infoWindowRef.current!.setContent(container)
+        infoWindowRef.current!.open(mapRef.current, marker)
       })
 
       newMarkers.push(marker)
@@ -106,10 +159,9 @@ export default function Map({ objects, loading, language }: MapProps) {
 
     markersRef.current = newMarkers
 
-    // Создание нового кластеризатора
     if (newMarkers.length > 0) {
       clustererRef.current = new MarkerClusterer({
-        map: mapRef.current,
+        map: mapRef.current!,
         markers: newMarkers,
         renderer: createClusterRenderer(),
         algorithm: new GridAlgorithm({
@@ -118,23 +170,7 @@ export default function Map({ objects, loading, language }: MapProps) {
         })
       })
     }
-  }, [objects, loading])
-
-  // Очистка при размонтировании
-  useEffect(() => {
-    return () => {
-      markersRef.current.forEach(marker => marker.setMap(null))
-      if (clustererRef.current) {
-        clustererRef.current.clearMarkers()
-      }
-      mapRef.current = null
-    }
-  }, [])
-
-  const handleInfoWindowClose = () => {
-    setSelectedObject(null)
-    setInfoWindowPosition(null)
-  }
+  }, [objects, loading, language])
 
   if (!apiKey) {
     return (
@@ -145,49 +181,26 @@ export default function Map({ objects, loading, language }: MapProps) {
   }
 
   return (
-    <LoadScript
-      googleMapsApiKey={apiKey}
-      libraries={['places']}
-      language={language}
-      region={language}
-      key={language}
-    >
-      <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-        <GoogleMap
-          mapContainerStyle={mapContainerStyle}
-          zoom={5}
-          center={KAZAKHSTAN_CENTER}
-          options={DEFAULT_MAP_OPTIONS}
-          onLoad={onMapLoad}
+    <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+      <Box ref={mapContainerRef} sx={{ width: '100%', height: '100%' }} />
+      {loading && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            bgcolor: 'rgba(255,255,255,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1
+          }}
         >
-          {selectedObject && infoWindowPosition && (
-            <InfoWindow
-              position={infoWindowPosition}
-              onCloseClick={handleInfoWindowClose}
-            >
-              <MarkerInfo object={selectedObject} language={language} />
-            </InfoWindow>
-          )}
-        </GoogleMap>
-        {loading && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              bgcolor: 'rgba(255,255,255,0.7)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1
-            }}
-          >
-            <CircularProgress size={60} />
-          </Box>
-        )}
-      </Box>
-    </LoadScript>
+          <CircularProgress size={60} />
+        </Box>
+      )}
+    </Box>
   )
 }
