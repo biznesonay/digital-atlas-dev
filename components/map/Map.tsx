@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import loadGoogleMaps from '@/hooks/useGoogleMaps'
+import { loadGoogleMaps } from '@/hooks/useGoogleMaps'
 import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer'
 import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER } from '@/lib/constants'
 import { CircularProgress, Box, Typography } from '@mui/material'
@@ -87,8 +87,9 @@ export default function Map({ objects, loading, language }: MapProps) {
       markersRef.current.forEach(marker => marker.setMap(null))
       markersRef.current = []
       if (clustererRef.current) {
-        clustererRef.current.clearMarkers()
-        clustererRef.current = null
+        if (clustererRef.current?.getMap()) {
+          clustererRef.current.clearMarkers(true)
+        }        clustererRef.current = null
       }
       if (infoWindowRef.current) {
         infoWindowRef.current.close()
@@ -109,7 +110,9 @@ export default function Map({ objects, loading, language }: MapProps) {
     markersRef.current = []
 
     if (clustererRef.current) {
-      clustererRef.current.clearMarkers()
+      if (clustererRef.current?.getMap()) {
+        clustererRef.current.clearMarkers(true)
+      }
       clustererRef.current = null
     }
 

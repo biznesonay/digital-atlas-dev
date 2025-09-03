@@ -150,6 +150,7 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
               <div key={object.id}>
                 <ListItem sx={{ px: 3, py: 2 }}>
                   <ListItemText
+                    disableTypography
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <Typography variant="subtitle1" fontWeight="bold">
