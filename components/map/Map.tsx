@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { loadGoogleMaps } from '@/hooks/useGoogleMaps'
 import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer'
 import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER } from '@/lib/constants'
@@ -48,6 +48,7 @@ export default function Map({ objects, loading, language }: MapProps) {
   const infoWindowRootRef = useRef<Root | null>(null)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const apiKey: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
     if (!apiKey) return
@@ -77,6 +78,7 @@ export default function Map({ objects, loading, language }: MapProps) {
             infoWindowRootRef.current = null
           }
         })
+        setMapReady(true)
       })
       .catch(err => {
         console.error('Failed to load Google Maps', err)
@@ -100,10 +102,12 @@ export default function Map({ objects, loading, language }: MapProps) {
         infoWindowRootRef.current = null
       }
       mapRef.current = null
+      setMapReady(false)
     }
   }, [language, apiKey])
 
   useEffect(() => {
+    if (!mapReady) return
     if (!mapRef.current || loading) return
 
     markersRef.current.forEach(marker => marker.setMap(null))
@@ -173,7 +177,7 @@ export default function Map({ objects, loading, language }: MapProps) {
         })
       })
     }
-  }, [objects, loading, language])
+  }, [objects, loading, language, mapReady])
 
   if (!apiKey) {
     return (
