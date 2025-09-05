@@ -49,15 +49,23 @@ export default function Map({ objects, loading, language }: MapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const apiKey: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const [mapReady, setMapReady] = useState(false)
+  const [mapError, setMapError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!apiKey) return
 
     let isMounted = true
 
+    setMapError(null)
+
     loadGoogleMaps(language)
       .then(() => {
         if (!isMounted || !mapContainerRef.current) return
+
+        if (!(window as any).google || !(window as any).google.maps) {
+          setMapError('Google Maps SDK not available')
+          return
+        }
 
         mapRef.current = new google.maps.Map(mapContainerRef.current, {
           ...DEFAULT_MAP_OPTIONS,
@@ -81,7 +89,8 @@ export default function Map({ objects, loading, language }: MapProps) {
         setMapReady(true)
       })
       .catch(err => {
-        console.error('Failed to load Google Maps', err)
+        console.error('Failed to load Google Maps. Possible network issue or invalid API key.', err)
+        setMapError('Failed to load Google Maps. Please check your network connection or API key.')
       })
 
     return () => {
@@ -109,6 +118,10 @@ export default function Map({ objects, loading, language }: MapProps) {
   useEffect(() => {
     if (!mapReady) return
     if (!mapRef.current || loading) return
+    if (!(window as any).google || !(window as any).google.maps) {
+      setMapError('Google Maps SDK not available')
+      return
+    }
 
     markersRef.current.forEach(marker => marker.setMap(null))
     markersRef.current = []
@@ -187,6 +200,14 @@ export default function Map({ objects, loading, language }: MapProps) {
     )
   }
 
+   if (mapError) {
+    return (
+      <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography>{mapError}</Typography>
+      </Box>
+    )
+  }
+  
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <Box ref={mapContainerRef} sx={{ width: '100%', height: '100%' }} />
