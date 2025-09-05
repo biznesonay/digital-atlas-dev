@@ -177,7 +177,7 @@ export default function Map({ objects, loading, language }: MapProps) {
         })
       })
     }
-  }, [objects, loading, language, mapReady])
+  }, [objects, loading, language, mapReady]) 
 
   if (!apiKey) {
     return (
