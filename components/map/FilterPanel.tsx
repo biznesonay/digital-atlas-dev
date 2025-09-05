@@ -219,9 +219,10 @@ export default function FilterPanel({
           <Typography variant="h6" gutterBottom>
             {t.filters}
             {activeFiltersCount > 0 && (
-              <Chip 
-                label={activeFiltersCount} 
-                size="small" 
+             <Chip
+                component="span"
+                label={activeFiltersCount}
+                size="small"
                 color="primary"
                 sx={{ ml: 1 }}
               />
@@ -300,9 +301,10 @@ export default function FilterPanel({
               <Typography>
                 {t.types}
                 {filters.typeIds.length > 0 && (
-                  <Chip 
-                    label={filters.typeIds.length} 
-                    size="small" 
+                  <Chip
+                    component="span"
+                    label={filters.typeIds.length}
+                    size="small"
                     sx={{ ml: 1 }}
                   />
                 )}
@@ -350,9 +352,10 @@ export default function FilterPanel({
               <Typography>
                 {t.regions}
                 {filters.regionIds.length > 0 && (
-                  <Chip 
-                    label={filters.regionIds.length} 
-                    size="small" 
+                  <Chip
+                    component="span"
+                    label={filters.regionIds.length}
+                    size="small"
                     sx={{ ml: 1 }}
                   />
                 )}
@@ -381,9 +384,10 @@ export default function FilterPanel({
               <Typography>
                 {t.directions}
                 {filters.directionIds.length > 0 && (
-                  <Chip 
-                    label={filters.directionIds.length} 
-                    size="small" 
+                  <Chip
+                    component="span"
+                    label={filters.directionIds.length}
+                    size="small"
                     sx={{ ml: 1 }}
                   />
                 )}

@@ -130,7 +130,7 @@ export default function UsersTable({ users, currentUserId }: UsersTableProps) {
                     <Typography variant="body2" fontWeight={isCurrentUser ? 'bold' : 'normal'}>
                       {user.name}
                       {isCurrentUser && (
-                        <Chip label="Вы" size="small" sx={{ ml: 1 }} />
+                        <Chip component="span" label="Вы" size="small" sx={{ ml: 1 }} />
                       )}
                     </Typography>
                   </TableCell>
