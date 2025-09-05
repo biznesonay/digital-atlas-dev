@@ -7,6 +7,31 @@ import { objectSchema } from '@/lib/validation/object'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 
+export interface ObjectSuggestion {
+  id: string
+  name: string
+  address: string
+}
+
+// Получение подсказок по объектам
+export async function fetchObjectSuggestions(query: string): Promise<ObjectSuggestion[]> {
+  if (!query.trim()) return []
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+  const params = new URLSearchParams({ query })
+
+  try {
+    const res = await fetch(`${baseUrl}/api/objects/suggestions?${params.toString()}`)
+    if (!res.ok) {
+      throw new Error('Failed to fetch object suggestions')
+    }
+    return await res.json()
+  } catch (error) {
+    console.error('fetchObjectSuggestions error:', error)
+    return []
+  }
+}
+
 // Получение списка объектов для админки
 export async function getAdminObjects(params?: {
   search?: string

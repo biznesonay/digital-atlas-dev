@@ -22,7 +22,8 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Typography
+  Typography,
+  Autocomplete
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -31,6 +32,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { deleteObject, toggleObjectPublish } from '@/app/actions/objects'
+import { fetchObjectSuggestions } from '@/lib/api'
 
 interface ObjectsTableProps {
   objects: any[]
@@ -43,20 +45,35 @@ interface ObjectsTableProps {
 export default function ObjectsTable({ objects, total, page, pages, searchParams }: ObjectsTableProps) {
   const router = useRouter()
   const [searchInput, setSearchInput] = useState(searchParams.search || '')
+  const [suggestions, setSuggestions] = useState<string[]>([])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [objectToDelete, setObjectToDelete] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+  const performSearch = (value: string) => {
     const params = new URLSearchParams(searchParams)
-    if (searchInput) {
-      params.set('search', searchInput)
+    if (value) {
+      params.set('search', value)
     } else {
       params.delete('search')
     }
     params.set('page', '1')
     router.push(`/admin/objects?${params.toString()}`)
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    performSearch(searchInput)
+  }
+
+  const handleInputChange = async (_: any, value: string) => {
+    setSearchInput(value)
+    if (value) {
+      const opts = await fetchObjectSuggestions(value)
+      setSuggestions(opts)
+    } else {
+      setSuggestions([])
+    }
   }
 
   const handlePageChange = (event: unknown, newPage: number) => {
@@ -98,18 +115,37 @@ export default function ObjectsTable({ objects, total, page, pages, searchParams
     <>
       <Paper sx={{ mb: 3, p: 2 }}>
         <form onSubmit={handleSearch}>
-          <TextField
-            fullWidth
-            placeholder="Поиск по названию или адресу..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
+          <Autocomplete
+            freeSolo
+            options={suggestions}
+            inputValue={searchInput}
+            onInputChange={handleInputChange}
+            onChange={(_, value) => {
+              const val = value || ''
+              setSearchInput(val)
+              performSearch(val)
             }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                fullWidth
+                placeholder="Поиск по названию или адресу..."
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    performSearch(searchInput)
+                  }
+                }}
+              />
+            )}
           />
         </form>
       </Paper>

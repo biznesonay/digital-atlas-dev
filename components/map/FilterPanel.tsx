@@ -17,7 +17,8 @@ import {
   InputAdornment,
   IconButton,
   Divider,
-  Badge
+  Badge,
+  Autocomplete
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -27,6 +28,7 @@ import ListIcon from '@mui/icons-material/List'
 import { MapFilters } from '@/lib/types'
 import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import ObjectsList from './ObjectsList'
+import { fetchObjectSuggestions } from '@/lib/api'
 
 interface FilterPanelProps {
   filters: MapFilters
@@ -57,6 +59,7 @@ export default function FilterPanel({
   const [searchInput, setSearchInput] = useState(filters.search)
   const [showObjectsList, setShowObjectsList] = useState(false)
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [suggestions, setSuggestions] = useState<string[]>([])
 
   const labels = {
     ru: {
@@ -129,19 +132,31 @@ export default function FilterPanel({
   }, [language])
 
   // Дебаунс для поиска
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchInput(value)
-    
-    if (searchTimeout) {
-      clearTimeout(searchTimeout)
-    }
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchInput(value)
+      if (searchTimeout) {
+        clearTimeout(searchTimeout)
+      }
 
-    const timeout = setTimeout(() => {
-      onFilterChange({ search: value })
-    }, SEARCH_DEBOUNCE_MS)
-    
-    setSearchTimeout(timeout)
-  }, [searchTimeout, onFilterChange])
+      const timeout = setTimeout(async () => {
+        onFilterChange({ search: value })
+        if (value) {
+          try {
+            const opts = await fetchObjectSuggestions(value, language)
+            setSuggestions(opts)
+          } catch (e) {
+            console.error('Error fetching suggestions:', e)
+          }
+        } else {
+          setSuggestions([])
+        }
+      }, SEARCH_DEBOUNCE_MS)
+
+      setSearchTimeout(timeout)
+    },
+    [searchTimeout, onFilterChange, language]
+  )
 
   // Очистка таймера при размонтировании
   useEffect(() => {
@@ -176,6 +191,7 @@ export default function FilterPanel({
   const handleClearSearch = () => {
     setSearchInput('')
     onFilterChange({ search: '' })
+    setSuggestions([])
   }
 
   const activeFiltersCount = 
@@ -230,27 +246,51 @@ export default function FilterPanel({
             </IconButton>
           </Box>
 
-          <TextField
-            fullWidth
-            size="small"
-            label={t.search}
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            margin="normal"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: searchInput && (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={handleClearSearch}>
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              )
+          <Autocomplete
+            freeSolo
+            options={suggestions}
+            inputValue={searchInput}
+            onInputChange={(_e, value, reason) => {
+              if (reason === 'input') {
+                handleSearchChange(value)
+              }
             }}
+            onChange={(_e, value) => {
+              if (typeof value === 'string') {
+                setSearchInput(value)
+                onFilterChange({ search: value })
+                setSuggestions([])
+              }
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                fullWidth
+                size="small"
+                label={t.search}
+                margin="normal"
+                InputProps={{
+                  ...params.InputProps,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <>
+                      {searchInput && (
+                        <InputAdornment position="end">
+                          <IconButton size="small" onClick={handleClearSearch}>
+                            <ClearIcon />
+                          </IconButton>
+                        </InputAdornment>
+                      )}
+                      {params.InputProps.endAdornment}
+                    </>
+                  )
+                }}
+              />
+            )}
           />
 
           <Divider sx={{ my: 2 }} />
