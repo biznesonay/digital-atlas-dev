@@ -96,8 +96,10 @@ export default function Map({ objects, loading, language }: MapProps) {
     return () => {
       isMounted = false
       clustererRef.current?.setMap(null)
-      mapRef.current?.setMap(null)
-      markersRef.current.forEach(marker => (marker.map = null))      markersRef.current = []
+      markersRef.current.forEach(marker => {
+        marker.map = null;
+      });
+      markersRef.current = []
       if (clustererRef.current) {
         clustererRef.current.clearMarkers(true)
         clustererRef.current = null

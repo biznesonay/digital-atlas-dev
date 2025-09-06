@@ -6,6 +6,7 @@ import ExcelJS from 'exceljs'
 import { validateImportRow, mapExcelRow, TEMPLATE_COLUMNS } from '@/lib/validation/import'
 import { ImportError, ImportResult } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
+import logger from '@/lib/logger'
 
 // Генерация шаблона Excel
 export async function generateImportTemplate() {
