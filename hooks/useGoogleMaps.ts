@@ -1,10 +1,10 @@
 // Utility to load Google Maps API dynamically using the official loader
-import { Loader } from '@googlemaps/js-api-loader'
+import { Loader, LoaderOptions } from '@googlemaps/js-api-loader'
 
 let loader: Loader | null = null
 let loadingPromise: Promise<typeof google> | null = null
 
-export async function loadGoogleMaps(language: string): Promise<typeof google> {
+export async function loadGoogleMaps(language: string, mapId?: string): Promise<typeof google> {
   if (typeof window === 'undefined') {
     throw new Error('loadGoogleMaps must be called in a browser environment')
   }
@@ -27,13 +27,19 @@ export async function loadGoogleMaps(language: string): Promise<typeof google> {
     delete (window as any).google
   }
 
-  loader = new Loader({
+  const options: LoaderOptions = {
     apiKey: key,
     language,
     region,
     version: 'beta',
     libraries: ['marker']
-  })
+  }
+
+  if (mapId) {
+    ;(options as any).mapIds = [mapId]
+  }
+
+  loader = new Loader(options)
 
   loadingPromise = loader.load().then(() => {
     loadingPromise = null

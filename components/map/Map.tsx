@@ -48,17 +48,18 @@ export default function Map({ objects, loading, language }: MapProps) {
   const infoWindowRootRef = useRef<Root | null>(null)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const apiKey: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  const mapId: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID
   const [mapReady, setMapReady] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!apiKey) return
+    if (!apiKey || !mapId) return
 
     let isMounted = true
 
     setMapError(null)
 
-    loadGoogleMaps(language)
+    loadGoogleMaps(language, mapId)
       .then(() => {
         if (!isMounted || !mapContainerRef.current) return
 
@@ -67,11 +68,13 @@ export default function Map({ objects, loading, language }: MapProps) {
           return
         }
 
-        mapRef.current = new google.maps.Map(mapContainerRef.current, {
+        const mapOptions: google.maps.MapOptions = {
           ...DEFAULT_MAP_OPTIONS,
           center: KAZAKHSTAN_CENTER,
-          zoom: 5
-        })
+          zoom: 5,
+          mapId
+        }
+        mapRef.current = new google.maps.Map(mapContainerRef.current, mapOptions)
 
         const bounds = new google.maps.LatLngBounds(
           new google.maps.LatLng(KAZAKHSTAN_BOUNDS.south, KAZAKHSTAN_BOUNDS.west),
@@ -195,10 +198,10 @@ export default function Map({ objects, loading, language }: MapProps) {
     }
   }, [objects, loading, language, mapReady]) 
 
-  if (!apiKey) {
+  if (!apiKey || !mapId) {
     return (
       <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography>Google Maps API key is not configured</Typography>
+        <Typography>Google Maps API key or Map ID is not configured</Typography>
       </Box>
     )
   }

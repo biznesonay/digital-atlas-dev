@@ -51,6 +51,7 @@ NEXTAUTH_SECRET="your-secret-key-minimum-32-characters"
 
 # Google Maps API
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
+NEXT_PUBLIC_GOOGLE_MAP_ID="your-map-id"
 GOOGLE_GEOCODING_API_KEY="your-google-geocoding-api-key"
 
 # URL приложения
