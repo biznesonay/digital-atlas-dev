@@ -4,9 +4,9 @@ import { Loader } from '@googlemaps/js-api-loader'
 let loader: Loader | null = null
 let loadingPromise: Promise<typeof google> | null = null
 
-export function loadGoogleMaps(language: string): Promise<typeof google> {
+export async function loadGoogleMaps(language: string): Promise<typeof google> {
   if (typeof window === 'undefined') {
-    return Promise.resolve(undefined as unknown as typeof google)
+    throw new Error('loadGoogleMaps must be called in a browser environment')
   }
   if (loadingPromise) {
     return loadingPromise
@@ -14,15 +14,17 @@ export function loadGoogleMaps(language: string): Promise<typeof google> {
 
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   if (!key) {
-    return Promise.reject(new Error('Google Maps API key is not configured'))
+    throw new Error('Google Maps API key is not configured')
   }
 
   const regionMap: Record<string, string> = { ru: 'RU', kz: 'KZ', en: 'US' }
   const region = regionMap[language] || 'US'
 
   if (loader) {
-    loader.deleteScript()
+    await loader.deleteScript()
     loader = null
+    ;(Loader as any).instance = undefined
+    delete (window as any).google
   }
 
   loader = new Loader({
