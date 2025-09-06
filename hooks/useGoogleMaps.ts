@@ -1,11 +1,14 @@
-// Utility to load Google Maps script dynamically based on language
+// Utility to load Google Maps API dynamically using the official loader
+import { Loader } from '@googlemaps/js-api-loader'
+
+let loader: Loader | null = null
 let loadingPromise: Promise<typeof google> | null = null
 
 export function loadGoogleMaps(language: string): Promise<typeof google> {
   if (typeof window === 'undefined') {
     return Promise.resolve(undefined as unknown as typeof google)
   }
-if (loadingPromise) {
+  if (loadingPromise) {
     return loadingPromise
   }
 
@@ -14,35 +17,23 @@ if (loadingPromise) {
     return Promise.reject(new Error('Google Maps API key is not configured'))
   }
 
-  const existing = document.getElementById('google-maps')
-  if (existing) {
-    existing.remove()
-  }
-  document
-    .querySelectorAll(
-      'script[src*="maps.googleapis.com"], script[src*="maps.gstatic.com"], link[href*="maps.googleapis.com"], link[href*="maps.gstatic.com"]'
-    )
-    .forEach(el => el.parentNode?.removeChild(el))
-
-  delete (window as any).google
-
   const regionMap: Record<string, string> = { ru: 'RU', kz: 'KZ', en: 'US' }
   const region = regionMap[language] || 'US'
 
-  loadingPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script')
-    script.id = 'google-maps'
-    script.async = true
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&language=${language}&region=${region}`
-    script.onload = () => {
-      loadingPromise = null
-      resolve(google)
-    }
-    script.onerror = () => {
-      loadingPromise = null
-      reject(new Error('Failed to load Google Maps'))
-    }
-    document.head.appendChild(script)
+  if (loader) {
+    loader.deleteScript()
+    loader = null
+  }
+
+  loader = new Loader({
+    apiKey: key,
+    language,
+    region
+  })
+
+  loadingPromise = loader.load().then(() => {
+    loadingPromise = null
+    return google
   })
 
   return loadingPromise

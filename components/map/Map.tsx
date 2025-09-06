@@ -43,7 +43,7 @@ const createClusterRenderer = () => {
 export default function Map({ objects, loading, language }: MapProps) {
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
-  const markersRef = useRef<google.maps.Marker[]>([])
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const infoWindowRootRef = useRef<Root | null>(null)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
@@ -95,12 +95,12 @@ export default function Map({ objects, loading, language }: MapProps) {
 
     return () => {
       isMounted = false
-      markersRef.current.forEach(marker => marker.setMap(null))
-      markersRef.current = []
+      clustererRef.current?.setMap(null)
+      mapRef.current?.setMap(null)
+      markersRef.current.forEach(marker => (marker.map = null))      markersRef.current = []
       if (clustererRef.current) {
-        if (clustererRef.current?.getMap()) {
-          clustererRef.current.clearMarkers(true)
-        }        clustererRef.current = null
+        clustererRef.current.clearMarkers(true)
+        clustererRef.current = null
       }
       if (infoWindowRef.current) {
         infoWindowRef.current.close()
@@ -123,7 +123,7 @@ export default function Map({ objects, loading, language }: MapProps) {
       return
     }
 
-    markersRef.current.forEach(marker => marker.setMap(null))
+    markersRef.current.forEach(marker => (marker.map = null))
     markersRef.current = []
 
     if (clustererRef.current) {
@@ -141,22 +141,23 @@ export default function Map({ objects, loading, language }: MapProps) {
       infoWindowRootRef.current = null
     }
 
-    const newMarkers: google.maps.Marker[] = []
+    const newMarkers: google.maps.marker.AdvancedMarkerElement[] = []
     
     objects.forEach(obj => {
       if (!obj.latitude || !obj.longitude) return
       
-      const marker = new google.maps.Marker({
+      const markerContent = document.createElement('div')
+      markerContent.style.backgroundColor = obj.type?.color || '#1976D2'
+      markerContent.style.border = '2px solid white'
+      markerContent.style.borderRadius = '50%'
+      markerContent.style.height = '16px'
+      markerContent.style.width = '16px'
+      markerContent.style.boxSizing = 'border-box'
+
+      const marker = new google.maps.marker.AdvancedMarkerElement({
         position: { lat: obj.latitude, lng: obj.longitude },
         title: obj.name || '',
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          fillColor: obj.type?.color || '#1976D2',
-          fillOpacity: 0.9,
-          strokeColor: 'white',
-          strokeWeight: 2,
-          scale: 8
-        }
+        content: markerContent
       })
 
       marker.addListener('click', () => {
