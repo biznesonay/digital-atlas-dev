@@ -143,7 +143,7 @@ export default function FilterPanel({
         onFilterChange({ search: value })
         if (value) {
           try {
-            const opts = await fetchObjectSuggestions(value, language)
+            const opts = await fetchObjectSuggestions(value)
             setSuggestions(opts)
           } catch (e) {
             console.error('Error fetching suggestions:', e)

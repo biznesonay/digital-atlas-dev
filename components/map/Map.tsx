@@ -28,12 +28,12 @@ const createClusterRenderer = () => {
         </svg>
       `
       
-      return new google.maps.Marker({
+      const div = document.createElement('div')
+      div.innerHTML = svg
+
+      return new google.maps.marker.AdvancedMarkerElement({
         position,
-        icon: {
-          url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-          scaledSize: new google.maps.Size(size, size)
-        },
+        content: div,
         zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count
       })
     }
