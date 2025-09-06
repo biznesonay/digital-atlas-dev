@@ -28,7 +28,9 @@ export function loadGoogleMaps(language: string): Promise<typeof google> {
   loader = new Loader({
     apiKey: key,
     language,
-    region
+    region,
+    version: 'beta',
+    libraries: ['marker']
   })
 
   loadingPromise = loader.load().then(() => {
