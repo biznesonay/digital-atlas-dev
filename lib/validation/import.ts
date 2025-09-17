@@ -45,6 +45,76 @@ export const importFileSchema = z.object({
 export type ImportRow = z.infer<typeof importRowSchema>
 export type ImportFile = z.infer<typeof importFileSchema>
 
+export type ExcelPrimitiveValue = string | number | boolean | Date | null
+
+export function sanitizeExcelCellValue(value: unknown): ExcelPrimitiveValue {
+  if (value === undefined || value === null) {
+    return null
+  }
+
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value
+  }
+
+  if (typeof value === 'object') {
+    const valueObject = value as Record<string, unknown>
+
+    if ('result' in valueObject) {
+      const resultValue = sanitizeExcelCellValue(
+        (valueObject as { result?: unknown }).result
+      )
+      if (resultValue !== null) {
+        return resultValue
+      }
+    }
+
+    const richText = (valueObject as { richText?: Array<{ text?: string }> }).richText
+    if (Array.isArray(richText)) {
+      const combinedText = richText.map(part => part?.text ?? '').join('')
+      if (combinedText.trim().length > 0) {
+        return combinedText
+      }
+    }
+
+    const textValue = (valueObject as { text?: unknown }).text
+    if (typeof textValue === 'string' && textValue.trim().length > 0) {
+      return textValue
+    }
+
+    const hyperlinkValue = (valueObject as { hyperlink?: unknown }).hyperlink
+    if (typeof hyperlinkValue === 'string') {
+      return hyperlinkValue
+    }
+
+    const formulaValue = (valueObject as { formula?: unknown }).formula
+    if (typeof formulaValue === 'string') {
+      return formulaValue
+    }
+
+    const sharedFormulaValue = (valueObject as { sharedFormula?: unknown }).sharedFormula
+    if (typeof sharedFormulaValue === 'string') {
+      return sharedFormulaValue
+    }
+
+    const errorValue = (valueObject as { error?: unknown }).error
+    if (typeof errorValue === 'string') {
+      return errorValue
+    }
+
+    try {
+      return JSON.stringify(valueObject)
+    } catch {
+      return String(valueObject)
+    }
+  }
+
+  return String(value)
+}
+
 // Функция для валидации и нормализации строки импорта
 export function validateImportRow(row: unknown, rowIndex: number): {
   valid: boolean
@@ -96,8 +166,7 @@ export function mapExcelRow(excelRow: Record<string, unknown>): Record<string, u
   
   for (const [excelKey, schemaKey] of Object.entries(EXCEL_COLUMN_MAPPING)) {
     if (excelRow[excelKey] !== undefined) {
-      mappedRow[schemaKey] = excelRow[excelKey]
-    }
+      mappedRow[schemaKey] = sanitizeExcelCellValue(excelRow[excelKey])
   }
   
   return mappedRow

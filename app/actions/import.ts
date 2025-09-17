@@ -3,7 +3,12 @@
 import { requireRole } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import ExcelJS from 'exceljs'
-import { validateImportRow, mapExcelRow, TEMPLATE_COLUMNS } from '@/lib/validation/import'
+import {
+  validateImportRow,
+  mapExcelRow,
+  TEMPLATE_COLUMNS,
+  sanitizeExcelCellValue
+} from '@/lib/validation/import'
 import { ImportError, ImportResult } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 import logger from '@/lib/logger'
@@ -106,7 +111,7 @@ export async function validateImportFile(fileData: string, filename: string) {
       row.eachCell((cell, colNumber) => {
         const header = worksheet.getRow(1).getCell(colNumber).value
         if (header) {
-          rowData[header.toString()] = cell.value
+          rowData[header.toString()] = sanitizeExcelCellValue(cell.value)
         }
       })
 
