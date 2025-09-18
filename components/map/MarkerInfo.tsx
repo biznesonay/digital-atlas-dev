@@ -90,7 +90,14 @@ export default function MarkerInfo({ object, language }: MarkerInfoProps) {
           <Typography variant="caption" color="text.secondary">
             {t.directions}:
           </Typography>
-          <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.5 }}>
+         <Stack
+            direction="row"
+            flexWrap="wrap"
+            sx={{
+              mt: 0.5,
+              gap: 0.5
+            }}
+          >
             {object.directions.map((dir: any) => (
               <Chip 
                 key={dir.id} 
