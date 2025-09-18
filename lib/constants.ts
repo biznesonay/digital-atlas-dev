@@ -45,9 +45,9 @@ export const MARKER_COLORS = {
 
 // Поддерживаемые языки
 export const SUPPORTED_LANGUAGES = [
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'kz', name: 'Қазақша', flag: '🇰🇿' },
-  { code: 'en', name: 'English', flag: '🇬🇧' }
+  { code: 'ru', name: 'Русский', iconSrc: '/images/flags/ru.svg' },
+  { code: 'kz', name: 'Қазақша', iconSrc: '/images/flags/kz.svg' },
+  { code: 'en', name: 'English', iconSrc: '/images/flags/gb.svg' }
 ] as const
 
 export type LanguageCode = 'ru' | 'kz' | 'en'

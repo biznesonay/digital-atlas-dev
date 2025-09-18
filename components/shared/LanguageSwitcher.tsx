@@ -1,4 +1,5 @@
 import { Button, ButtonGroup } from '@mui/material'
+import Image from 'next/image'
 import { SUPPORTED_LANGUAGES, LanguageCode } from '@/lib/constants'
 
 interface LanguageSwitcherProps {
@@ -34,7 +35,13 @@ export default function LanguageSwitcher({
           onClick={() => onLanguageChange(lang.code as LanguageCode)}
           title={lang.name}
         >
-          <span style={{ marginRight: 4 }}>{lang.flag}</span>
+          <Image
+            src={lang.iconSrc}
+            alt={`${lang.name} flag`}
+            width={20}
+            height={14}
+            style={{ marginRight: 4, borderRadius: 2 }}
+          />
           <span className="lang-code">{lang.code.toUpperCase()}</span>
         </Button>
       ))}
