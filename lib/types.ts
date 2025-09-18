@@ -147,35 +147,3 @@ export interface DictionaryItem {
     name: string
   }>
 }
-
-// Типы для импорта
-export interface ImportRow {
-  name_ru: string
-  name_kz?: string
-  name_en?: string
-  address_ru: string
-  address_kz?: string
-  address_en?: string
-  type: string
-  region: string
-  directions?: string
-  latitude?: number
-  longitude?: number
-  website?: string
-  phones?: string
-  googleMapsUrl?: string
-}
-
-export interface ImportError {
-  row: number
-  field: string
-  value: any
-  message: string
-}
-
-export interface ImportResult {
-  success: boolean
-  imported: number
-  failed: number
-  errors: ImportError[]
-}

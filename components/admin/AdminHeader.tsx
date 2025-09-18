@@ -6,7 +6,6 @@ import { signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import ListIcon from '@mui/icons-material/List'
-import UploadIcon from '@mui/icons-material/Upload'
 import CategoryIcon from '@mui/icons-material/Category'
 import PeopleIcon from '@mui/icons-material/People'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
@@ -37,7 +36,6 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
   const menuItems = [
     { path: '/admin/dashboard', label: 'Главная', icon: <DashboardIcon />, roles: ['EDITOR', 'SUPER_ADMIN'] },
     { path: '/admin/objects', label: 'Объекты', icon: <ListIcon />, roles: ['EDITOR', 'SUPER_ADMIN'] },
-    { path: '/admin/import', label: 'Импорт', icon: <UploadIcon />, roles: ['EDITOR', 'SUPER_ADMIN'] },
     { path: '/admin/dictionaries', label: 'Справочники', icon: <CategoryIcon />, roles: ['SUPER_ADMIN'] },
     { path: '/admin/users', label: 'Пользователи', icon: <PeopleIcon />, roles: ['SUPER_ADMIN'] }
   ]

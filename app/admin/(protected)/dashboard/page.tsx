@@ -3,7 +3,6 @@ import { getAuthSession } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import AddIcon from '@mui/icons-material/Add'
-import UploadIcon from '@mui/icons-material/Upload'
 import ListIcon from '@mui/icons-material/List'
 import CategoryIcon from '@mui/icons-material/Category'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
@@ -103,12 +102,6 @@ export default async function AdminDashboard() {
       icon: <AddIcon />,
       link: '/admin/objects/new',
       color: 'primary'
-    },
-    {
-      title: 'Импорт из Excel',
-      icon: <UploadIcon />,
-      link: '/admin/import',
-      color: 'secondary'
     },
     {
       title: 'Все объекты',
