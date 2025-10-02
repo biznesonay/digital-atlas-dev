@@ -266,13 +266,20 @@ export default function Map({ objects, loading, language }: MapProps) {
             if (clusterBounds && !clusterBounds.isEmpty()) {
               map.fitBounds(clusterBounds, { top: 40, bottom: 40, left: 40, right: 40 })
 
-              google.maps.event.addListenerOnce(map, 'idle', () => {
+              const scheduleZoomAdjustment = () => {
                 const currentZoom = map.getZoom() ?? 0
                 const targetZoom = Math.min(currentZoom + 1, maxZoom)
+
                 if (targetZoom > currentZoom) {
                   map.setZoom(targetZoom)
                 }
-              })
+              }
+
+              if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(scheduleZoomAdjustment)
+              } else {
+                setTimeout(scheduleZoomAdjustment, 0)
+              }
             }
 
             return
