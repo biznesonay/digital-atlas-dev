@@ -193,7 +193,7 @@ export default function ObjectsTable({ objects, total, page, pages, searchParams
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    {object.latitude && object.longitude ? (
+                    {object.latitude != null && object.longitude != null ? (
                       <Tooltip title={`${object.latitude}, ${object.longitude}`}>
                         <LocationOnIcon color="success" fontSize="small" />
                       </Tooltip>
