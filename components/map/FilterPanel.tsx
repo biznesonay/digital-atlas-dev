@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Paper,
   TextField,
@@ -60,6 +60,7 @@ export default function FilterPanel({
   const [showObjectsList, setShowObjectsList] = useState(false)
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [suggestions, setSuggestions] = useState<string[]>([])
+  const latestQueryRef = useRef<string>(filters.search || '')
 
   const labels = {
     ru: {
@@ -135,6 +136,7 @@ export default function FilterPanel({
   const handleSearchChange = useCallback(
     (value: string) => {
       setSearchInput(value)
+      latestQueryRef.current = value
       if (searchTimeout) {
         clearTimeout(searchTimeout)
       }
@@ -144,7 +146,9 @@ export default function FilterPanel({
         if (value) {
           try {
             const opts = await fetchObjectSuggestions(value, filters.lang)
-            setSuggestions(opts)
+            if (latestQueryRef.current === value) {
+              setSuggestions(opts)
+            }
           } catch (e) {
             console.error('Error fetching suggestions:', e)
           }
@@ -166,6 +170,17 @@ export default function FilterPanel({
       }
     }
   }, [searchTimeout])
+
+  useEffect(() => {
+    setSearchTimeout((prevTimeout) => {
+      if (prevTimeout) {
+        clearTimeout(prevTimeout)
+      }
+      return null
+    })
+    latestQueryRef.current = ''
+    setSuggestions([])
+  }, [language])
 
   const handleTypeToggle = (typeId: string) => {
     const newTypeIds = filters.typeIds.includes(typeId)
@@ -192,6 +207,13 @@ export default function FilterPanel({
     setSearchInput('')
     onFilterChange({ search: '' })
     setSuggestions([])
+    setSearchTimeout((prevTimeout) => {
+      if (prevTimeout) {
+        clearTimeout(prevTimeout)
+      }
+      return null
+    })
+    latestQueryRef.current = ''
   }
 
   const activeFiltersCount = 
@@ -261,6 +283,7 @@ export default function FilterPanel({
                 setSearchInput(value)
                 onFilterChange({ search: value })
                 setSuggestions([])
+                latestQueryRef.current = value
               }
             }}
             renderInput={(params) => (
