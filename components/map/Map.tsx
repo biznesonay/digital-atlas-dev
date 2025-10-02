@@ -200,6 +200,8 @@ export default function Map({ objects, loading, language }: MapProps) {
             domEvent?: {
               stopPropagation?: () => void
               preventDefault?: () => void
+              type?: string
+              detail?: { type?: string }
             }
           }
 
@@ -219,13 +221,64 @@ export default function Map({ objects, loading, language }: MapProps) {
             return
           }
 
+          const domEventType =
+            clusterClickEvent.domEvent?.type ?? clusterClickEvent.domEvent?.detail?.type
+
+          if (domEventType === 'dblclick') {
+            const markers = (cluster as any)?.markers ?? []
+            const maxZoom = 21
+
+            if (markers.length === 1) {
+              const markerPosition = markers[0]?.position
+
+              if (markerPosition) {
+                map.panTo(markerPosition)
+                const currentZoom = map.getZoom() ?? 0
+                const targetZoom = Math.min(currentZoom + 2, maxZoom)
+                map.setZoom(targetZoom)
+              }
+
+              return
+            }
+
+            const clusterBounds = (() => {
+              if ((cluster as any)?.bounds) {
+                return (cluster as any).bounds as google.maps.LatLngBounds
+              }
+
+              if (!markers.length) {
+                return null
+              }
+
+              const bounds = new google.maps.LatLngBounds()
+              markers.forEach((marker: google.maps.marker.AdvancedMarkerElement) => {
+                const markerPosition = marker.position
+                if (markerPosition instanceof google.maps.LatLng) {
+                  bounds.extend(markerPosition)
+                } else if (markerPosition) {
+                  bounds.extend(markerPosition)
+                }
+              })
+
+              return bounds
+            })()
+
+            if (clusterBounds && !clusterBounds.isEmpty()) {
+              map.fitBounds(clusterBounds, { top: 40, bottom: 40, left: 40, right: 40 })
+
+              google.maps.event.addListenerOnce(map, 'idle', () => {
+                const currentZoom = map.getZoom() ?? 0
+                const targetZoom = Math.min(currentZoom + 1, maxZoom)
+                if (targetZoom > currentZoom) {
+                  map.setZoom(targetZoom)
+                }
+              })
+            }
+
+            return
+          }
+
           map.panTo(position)
-
-          const currentZoom = map.getZoom() ?? 0
-          const maxZoom = 21
-          const targetZoom = Math.min(currentZoom + 2, maxZoom)
-
-          map.setZoom(targetZoom)
         }
       })
     }
