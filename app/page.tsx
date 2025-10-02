@@ -33,33 +33,45 @@ export default function HomePage() {
 
   // Загрузка объектов при изменении фильтров
   useEffect(() => {
+    const controller = new AbortController()
+
     const fetchObjects = async () => {
       setLoading(true)
       try {
         const params = new URLSearchParams()
         params.append('lang', filters.lang)
-        
+
         if (filters.search) {
           params.append('search', filters.search)
         }
-        
+
         filters.typeIds.forEach(id => params.append('typeIds[]', id))
         filters.regionIds.forEach(id => params.append('regionIds[]', id))
         filters.directionIds.forEach(id => params.append('directionIds[]', id))
-        
-        const response = await fetch(`/api/objects?${params.toString()}`)
-        if (response.ok) {
+
+        const response = await fetch(`/api/objects?${params.toString()}`, {
+          signal: controller.signal
+        })
+        if (!controller.signal.aborted && response.ok) {
           const data = await response.json()
           setObjects(data.data)
         }
       } catch (error) {
-        console.error('Error fetching objects:', error)
+        if (!controller.signal.aborted) {
+          console.error('Error fetching objects:', error)
+        }
       } finally {
-        setLoading(false)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchObjects()
+
+    return () => {
+      controller.abort()
+    }
   }, [filters])
 
   const handleLanguageChange = (lang: LanguageCode) => {
