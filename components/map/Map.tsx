@@ -193,10 +193,28 @@ export default function Map({ objects, loading, language }: MapProps) {
         algorithm: new GridAlgorithm({
           gridSize: 60,
           maxDistance: 40000
-        })
+        }),
+        onClusterClick: (event, cluster, mapInstance) => {
+          event.stop()
+
+          const map = mapRef.current ?? mapInstance
+          const position = cluster?.position
+
+          if (!map || !position) {
+            return
+          }
+
+          map.panTo(position)
+
+          const currentZoom = map.getZoom() ?? 0
+          const maxZoom = 21
+          const targetZoom = Math.min(currentZoom + 2, maxZoom)
+
+          map.setZoom(targetZoom)
+        }
       })
     }
-  }, [objects, loading, language, mapReady]) 
+  }, [objects, loading, language, mapReady])
 
   if (!apiKey || !mapId) {
     return (
