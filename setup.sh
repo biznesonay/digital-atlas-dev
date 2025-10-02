@@ -46,6 +46,7 @@ NEXTAUTH_SECRET="$(openssl rand -base64 32)"
 
 # Google Maps API
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
+NEXT_PUBLIC_GOOGLE_MAP_ID="your-google-map-id"
 GOOGLE_GEOCODING_API_KEY="your-google-geocoding-api-key"
 
 # URL приложения
@@ -63,7 +64,7 @@ EOL
     echo ""
     echo "⚠️ ВАЖНО: Отредактируйте .env.local и добавьте:"
     echo "   1. Правильные данные для подключения к PostgreSQL"
-    echo "   2. Google Maps API ключи"
+    echo "   2. Google Maps API ключи и Map ID"
     echo ""
 else
     echo "✅ Файл .env.local найден"
