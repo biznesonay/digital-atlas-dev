@@ -245,7 +245,7 @@ export default function FilterPanel({
           width: { xs: 'calc(100% - 40px)', sm: 320 },
           maxHeight: 'calc(100vh - 100px)',
           overflow: 'auto',
-          mb: '20px'
+          bottom: '20px'
         }}
       >
         <Box sx={{ p: 2 }}>
