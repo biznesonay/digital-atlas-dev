@@ -143,7 +143,7 @@ export default function FilterPanel({
         onFilterChange({ search: value })
         if (value) {
           try {
-            const opts = await fetchObjectSuggestions(value)
+            const opts = await fetchObjectSuggestions(value, filters.lang)
             setSuggestions(opts)
           } catch (e) {
             console.error('Error fetching suggestions:', e)
@@ -155,7 +155,7 @@ export default function FilterPanel({
 
       setSearchTimeout(timeout)
     },
-    [searchTimeout, onFilterChange, language]
+    [searchTimeout, onFilterChange, filters.lang]
   )
 
   // Очистка таймера при размонтировании

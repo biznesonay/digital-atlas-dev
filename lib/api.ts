@@ -1,8 +1,11 @@
-export async function fetchObjectSuggestions(query: string): Promise<string[]> {
+export async function fetchObjectSuggestions(
+  query: string,
+  language = 'ru'
+): Promise<string[]> {
   if (!query) return []
   try {
     const params = new URLSearchParams()
-    params.set('lang', 'ru')
+    params.set('lang', language)
     params.set('search', query)
 
     const res = await fetch(`/api/objects?${params.toString()}`)
