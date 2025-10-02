@@ -53,13 +53,15 @@ export default function Map({ objects, loading, language }: MapProps) {
   const [mapError, setMapError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!apiKey || !mapId) return
+    if (!apiKey) return
 
     let isMounted = true
 
     setMapError(null)
 
-    loadGoogleMaps(language, mapId)
+    const normalizedMapId = mapId || undefined
+
+    loadGoogleMaps(language, normalizedMapId)
       .then(() => {
         if (!isMounted || !mapContainerRef.current) return
 
@@ -71,8 +73,10 @@ export default function Map({ objects, loading, language }: MapProps) {
         const mapOptions: google.maps.MapOptions = {
           ...DEFAULT_MAP_OPTIONS,
           center: KAZAKHSTAN_CENTER,
-          zoom: 5,
-          mapId
+          zoom: 5
+        }
+        if (normalizedMapId) {
+          mapOptions.mapId = normalizedMapId
         }
         mapRef.current = new google.maps.Map(mapContainerRef.current, mapOptions)
 
@@ -118,7 +122,7 @@ export default function Map({ objects, loading, language }: MapProps) {
       mapRef.current = null
       setMapReady(false)
     }
-  }, [language, apiKey])
+  }, [language, apiKey, mapId])
 
   useEffect(() => {
     if (!mapReady) return
