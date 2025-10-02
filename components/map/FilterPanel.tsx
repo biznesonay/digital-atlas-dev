@@ -182,6 +182,16 @@ export default function FilterPanel({
     setSuggestions([])
   }, [language])
 
+  useEffect(() => {
+    const currentSearch = filters.search || ''
+    setSearchInput(currentSearch)
+    latestQueryRef.current = currentSearch
+
+    if (!currentSearch) {
+      setSuggestions([])
+    }
+  }, [filters.search])
+
   const handleTypeToggle = (typeId: string) => {
     const newTypeIds = filters.typeIds.includes(typeId)
       ? filters.typeIds.filter(id => id !== typeId)
