@@ -195,7 +195,22 @@ export default function Map({ objects, loading, language }: MapProps) {
           maxDistance: 40000
         }),
         onClusterClick: (event, cluster, mapInstance) => {
-          event.stop()
+          type ClusterClickEvent = google.maps.MapMouseEvent & {
+            stop?: () => void
+            domEvent?: {
+              stopPropagation?: () => void
+              preventDefault?: () => void
+            }
+          }
+
+          const clusterClickEvent = event as ClusterClickEvent
+
+          if (typeof clusterClickEvent.stop === 'function') {
+            clusterClickEvent.stop()
+          } else {
+            clusterClickEvent.domEvent?.stopPropagation?.()
+            clusterClickEvent.domEvent?.preventDefault?.()
+          }
 
           const map = mapRef.current ?? mapInstance
           const position = cluster?.position
