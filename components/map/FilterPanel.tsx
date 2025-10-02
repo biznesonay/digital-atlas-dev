@@ -234,8 +234,8 @@ export default function FilterPanel({
 
   return (
     <>
-      <Paper 
-        className="filter-panel" 
+      <Paper
+        className="filter-panel"
         elevation={3}
         sx={{
           position: 'absolute',
@@ -243,8 +243,9 @@ export default function FilterPanel({
           left: 20,
           zIndex: 1000,
           width: { xs: 'calc(100% - 40px)', sm: 320 },
-          maxHeight: 'calc(100vh - 120px)',
-          overflow: 'auto'
+          maxHeight: 'calc(100vh - 100px)',
+          overflow: 'auto',
+          mb: '20px'
         }}
       >
         <Box sx={{ p: 2 }}>
