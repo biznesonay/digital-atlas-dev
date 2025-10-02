@@ -41,10 +41,28 @@ export async function loadGoogleMaps(language: string, mapId?: string): Promise<
 
   loader = new Loader(options)
 
-  loadingPromise = loader.load().then(() => {
-    loadingPromise = null
-    return google
-  })
+  loadingPromise = (async () => {
+    try {
+      await loader!.load()
+      return google
+    } catch (error) {
+      const originalError =
+        error instanceof Error ? error : new Error(String(error) || 'Failed to load Google Maps SDK')
+      const message = originalError.message || 'Failed to load Google Maps SDK'
+
+      if (message.includes('csp_test')) {
+        const enhancedError = new Error(
+          'Google Maps failed to load. A content blocker may be preventing the Google Maps SDK from loading.'
+        )
+        ;(enhancedError as any).cause = originalError
+        throw enhancedError
+      }
+
+      throw originalError
+    } finally {
+      loadingPromise = null
+    }
+  })()
 
   return loadingPromise
 }
