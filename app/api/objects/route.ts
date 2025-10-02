@@ -86,8 +86,10 @@ export async function GET(request: NextRequest) {
             code: true,
             markerColor: true,
             translations: {
-              where: { languageCode: lang },
-              select: { name: true }
+              where: {
+                languageCode: { in: lang === "ru" ? ["ru"] : [lang, "ru"] }
+              },
+              select: { languageCode: true, name: true }
             }
           }
         },
@@ -96,14 +98,19 @@ export async function GET(request: NextRequest) {
             id: true,
             code: true,
             translations: {
-              where: { languageCode: lang },
-              select: { name: true }
+              where: {
+                languageCode: { in: lang === "ru" ? ["ru"] : [lang, "ru"] }
+              },
+              select: { languageCode: true, name: true }
             }
           }
         },
         translations: {
-          where: { languageCode: lang },
+          where: {
+            languageCode: { in: lang === "ru" ? ["ru"] : [lang, "ru"] }
+          },
           select: {
+            languageCode: true,
             name: true,
             address: true
           }
@@ -114,8 +121,10 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 translations: {
-                  where: { languageCode: lang },
-                  select: { name: true }
+                  where: {
+                    languageCode: { in: lang === "ru" ? ["ru"] : [lang, "ru"] }
+                  },
+                  select: { languageCode: true, name: true }
                 }
               }
             }
@@ -123,33 +132,56 @@ export async function GET(request: NextRequest) {
         }
       }
     })
-    
+
     // Форматирование ответа
-    const formattedObjects = objects.map(obj => ({
-      id: obj.id,
-      latitude: obj.latitude,
-      longitude: obj.longitude,
-      website: obj.website,
-      googleMapsUrl: obj.googleMapsUrl,
-      contactPhones: obj.contactPhones as string[] | null,
-      type: {
-        id: obj.infrastructureType.id,
-        code: obj.infrastructureType.code,
-        color: obj.infrastructureType.markerColor,
-        name: obj.infrastructureType.translations[0]?.name || obj.infrastructureType.code
-      },
-      region: {
-        id: obj.region.id,
-        code: obj.region.code,
-        name: obj.region.translations[0]?.name || obj.region.code
-      },
-      name: obj.translations[0]?.name || '',
-      address: obj.translations[0]?.address || '',
-      directions: obj.priorityDirections.map(pd => ({
-        id: pd.priorityDirection.id,
-        name: pd.priorityDirection.translations[0]?.name || ''
-      }))
-    }))
+    const formattedObjects = objects.map(obj => {
+      const pickTranslation = <T extends { languageCode: string }>(
+        translations: (T & { name?: string | null; address?: string | null })[]
+      ) => {
+        if (!translations || translations.length === 0) return undefined
+        return (
+          translations.find(t => t.languageCode === lang) ||
+          translations.find(t => t.languageCode === "ru") ||
+          translations[0]
+        )
+      }
+
+      const objectTranslation = pickTranslation(obj.translations)
+      const typeTranslation = pickTranslation(obj.infrastructureType.translations)
+      const regionTranslation = pickTranslation(obj.region.translations)
+
+      return {
+        id: obj.id,
+        latitude: obj.latitude,
+        longitude: obj.longitude,
+        website: obj.website,
+        googleMapsUrl: obj.googleMapsUrl,
+        contactPhones: obj.contactPhones as string[] | null,
+        type: {
+          id: obj.infrastructureType.id,
+          code: obj.infrastructureType.code,
+          color: obj.infrastructureType.markerColor,
+          name: typeTranslation?.name || obj.infrastructureType.code
+        },
+        region: {
+          id: obj.region.id,
+          code: obj.region.code,
+          name: regionTranslation?.name || obj.region.code
+        },
+        name: objectTranslation?.name || "",
+        address: objectTranslation?.address || "",
+        directions: obj.priorityDirections.map(pd => {
+          const directionTranslation = pickTranslation(
+            pd.priorityDirection.translations
+          )
+
+          return {
+            id: pd.priorityDirection.id,
+            name: directionTranslation?.name || ""
+          }
+        })
+      }
+    })
     
     return NextResponse.json({
       data: formattedObjects,
