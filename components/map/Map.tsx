@@ -221,18 +221,22 @@ export default function Map({ objects, loading, language }: MapProps) {
             return
           }
 
-          const domEventType =
-            clusterClickEvent.domEvent?.type ??
-            (typeof clusterClickEvent.domEvent?.detail === 'object'
-              ? clusterClickEvent.domEvent.detail?.type
-              : undefined)
+          const domEvent = clusterClickEvent.domEvent
+          const domEventType = domEvent?.type
+          const detail = domEvent?.detail
+          const detailType =
+            typeof detail === 'object' && detail !== null && 'type' in detail
+              ? (detail as { type?: string }).type
+              : undefined
 
           const isDoubleClick =
             domEventType === 'dblclick' ||
             domEventType === 'gmp-dblclick' ||
+            detailType === 'dblclick' ||
+            detailType === 'gmp-dblclick' ||
             (domEventType === 'gmp-click' &&
-              typeof clusterClickEvent.domEvent?.detail === 'number' &&
-              clusterClickEvent.domEvent.detail >= 2)
+              typeof detail === 'number' &&
+              detail >= 2)
 
           if (isDoubleClick) {
             const markers = (cluster as any)?.markers ?? []
