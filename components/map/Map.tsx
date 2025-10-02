@@ -201,7 +201,7 @@ export default function Map({ objects, loading, language }: MapProps) {
               stopPropagation?: () => void
               preventDefault?: () => void
               type?: string
-              detail?: { type?: string }
+              detail?: { type?: string } | number
             }
           }
 
@@ -222,9 +222,19 @@ export default function Map({ objects, loading, language }: MapProps) {
           }
 
           const domEventType =
-            clusterClickEvent.domEvent?.type ?? clusterClickEvent.domEvent?.detail?.type
+            clusterClickEvent.domEvent?.type ??
+            (typeof clusterClickEvent.domEvent?.detail === 'object'
+              ? clusterClickEvent.domEvent.detail?.type
+              : undefined)
 
-          if (domEventType === 'dblclick') {
+          const isDoubleClick =
+            domEventType === 'dblclick' ||
+            domEventType === 'gmp-dblclick' ||
+            (domEventType === 'gmp-click' &&
+              typeof clusterClickEvent.domEvent?.detail === 'number' &&
+              clusterClickEvent.domEvent.detail >= 2)
+
+          if (isDoubleClick) {
             const markers = (cluster as any)?.markers ?? []
             const maxZoom = 21
 
