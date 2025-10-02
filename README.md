@@ -18,7 +18,7 @@
 ### Предварительные требования:
 - Node.js 20.18.0 LTS или выше
 - PostgreSQL 16 LTS или выше
-- Google Maps API Key
+- Google Maps API Key и Map ID
 
 ### 1. Клонирование и установка
 
