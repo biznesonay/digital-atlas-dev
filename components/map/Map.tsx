@@ -149,7 +149,7 @@ export default function Map({ objects, loading, language }: MapProps) {
     const newMarkers: google.maps.marker.AdvancedMarkerElement[] = []
     
     objects.forEach(obj => {
-      if (!obj.latitude || !obj.longitude) return
+      if (obj.latitude == null || obj.longitude == null) return
       
       const markerContent = document.createElement('div')
       markerContent.style.backgroundColor = obj.type?.color || '#1976D2'
