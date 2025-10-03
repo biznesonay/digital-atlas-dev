@@ -233,7 +233,7 @@ export default function Map({ objects, loading, language }: MapProps) {
 
           const now = Date.now()
           const timeSinceLastClick = now - lastClickTimeRef.current
-          const isDoubleClick = timeSinceLastClick < 300
+          const isDoubleClick = timeSinceLastClick < 300 && clickTimerRef.current !== null
           lastClickTimeRef.current = now
 
           if (isDoubleClick) {
