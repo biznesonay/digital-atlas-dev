@@ -47,6 +47,8 @@ export default function Map({ objects, loading, language }: MapProps) {
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const infoWindowRootRef = useRef<Root | null>(null)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const lastClickTimeRef = useRef<number>(0)
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const apiKey: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapId: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID
   const [mapReady, setMapReady] = useState(false)
@@ -118,6 +120,10 @@ export default function Map({ objects, loading, language }: MapProps) {
       if (infoWindowRootRef.current) {
         infoWindowRootRef.current.unmount()
         infoWindowRootRef.current = null
+      }
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current)
+        clickTimerRef.current = null
       }
       mapRef.current = null
       setMapReady(false)
@@ -204,8 +210,6 @@ export default function Map({ objects, loading, language }: MapProps) {
             domEvent?: {
               stopPropagation?: () => void
               preventDefault?: () => void
-              type?: string
-              detail?: { type?: string } | number
             }
           }
 
@@ -225,24 +229,17 @@ export default function Map({ objects, loading, language }: MapProps) {
             return
           }
 
-          const domEvent = clusterClickEvent.domEvent
-          const domEventType = domEvent?.type
-          const detail = domEvent?.detail
-          const detailType =
-            typeof detail === 'object' && detail !== null && 'type' in detail
-              ? (detail as { type?: string }).type
-              : undefined
-
-          const isDoubleClick =
-            domEventType === 'dblclick' ||
-            domEventType === 'gmp-dblclick' ||
-            detailType === 'dblclick' ||
-            detailType === 'gmp-dblclick' ||
-            (domEventType === 'gmp-click' &&
-              typeof detail === 'number' &&
-              detail >= 2)
+          const now = Date.now()
+          const timeSinceLastClick = now - lastClickTimeRef.current
+          const isDoubleClick = timeSinceLastClick < 300
+          lastClickTimeRef.current = now
 
           if (isDoubleClick) {
+            if (clickTimerRef.current) {
+              clearTimeout(clickTimerRef.current)
+              clickTimerRef.current = null
+            }
+
             const markers = (cluster as any)?.markers ?? []
             const maxZoom = 21
 
@@ -303,7 +300,17 @@ export default function Map({ objects, loading, language }: MapProps) {
             return
           }
 
-          map.panTo(position)
+          if (clickTimerRef.current) {
+            clearTimeout(clickTimerRef.current)
+          }
+
+          clickTimerRef.current = setTimeout(() => {
+            map.panTo(position)
+            if (clickTimerRef.current) {
+              clearTimeout(clickTimerRef.current)
+              clickTimerRef.current = null
+            }
+          }, 300)
         }
       })
     }
