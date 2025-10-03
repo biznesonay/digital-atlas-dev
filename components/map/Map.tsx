@@ -231,12 +231,7 @@ export default function Map({ objects, loading, language }: MapProps) {
             return
           }
 
-          const now = Date.now()
-          const timeSinceLastClick = now - lastClickTimeRef.current
-          const isDoubleClick = timeSinceLastClick < 300 && clickTimerRef.current !== null
-          lastClickTimeRef.current = now
-
-          if (isDoubleClick) {
+          const handleClusterDoubleClick = () => {
             if (clickTimerRef.current) {
               clearTimeout(clickTimerRef.current)
               clickTimerRef.current = null
@@ -255,7 +250,7 @@ export default function Map({ objects, loading, language }: MapProps) {
                 map.setZoom(targetZoom)
               }
 
-              return
+              return true
             }
 
             const clusterBounds = (() => {
@@ -299,7 +294,26 @@ export default function Map({ objects, loading, language }: MapProps) {
               }
             }
 
-            return
+            return true
+          }
+
+          const clickDetail = (clusterClickEvent.domEvent as MouseEvent | undefined)?.detail ?? 0
+          if (clickDetail >= 2) {
+            lastClickTimeRef.current = Date.now()
+            if (handleClusterDoubleClick()) {
+              return
+            }
+          }
+
+          const now = Date.now()
+          const timeSinceLastClick = now - lastClickTimeRef.current
+          const isDoubleClick = timeSinceLastClick < 300 && clickTimerRef.current !== null
+          lastClickTimeRef.current = now
+
+          if (isDoubleClick) {
+            if (handleClusterDoubleClick()) {
+              return
+            }
           }
 
           if (clickTimerRef.current) {
