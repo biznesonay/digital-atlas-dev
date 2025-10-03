@@ -27,9 +27,11 @@ const createClusterRenderer = () => {
           <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="14" font-weight="bold">${count}</text>
         </svg>
       `
-      
+
       const div = document.createElement('div')
       div.innerHTML = svg
+      div.style.cursor = 'pointer'
+      div.title = 'Двойной клик для приближения'
 
       return new google.maps.marker.AdvancedMarkerElement({
         position,
