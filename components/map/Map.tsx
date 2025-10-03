@@ -31,12 +31,13 @@ const createClusterRenderer = () => {
       const div = document.createElement('div')
       div.innerHTML = svg
       div.style.cursor = 'pointer'
-      div.title = 'Двойной клик для приближения'
 
       return new google.maps.marker.AdvancedMarkerElement({
         position,
         content: div,
-        zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count
+        zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+        title: 'Двойной клик для приближения',
+        ariaLabel: 'Двойной клик для приближения'
       })
     }
   }
