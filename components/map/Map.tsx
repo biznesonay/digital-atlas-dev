@@ -35,9 +35,7 @@ const createClusterRenderer = () => {
       return new google.maps.marker.AdvancedMarkerElement({
         position,
         content: div,
-        zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
-        title: 'Клик для центрирования',
-        ariaLabel: 'Клик для центрирования'
+        zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count
       })
     }
   }
