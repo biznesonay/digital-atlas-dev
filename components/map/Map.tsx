@@ -36,8 +36,8 @@ const createClusterRenderer = () => {
         position,
         content: div,
         zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
-        title: 'Двойной клик для приближения',
-        ariaLabel: 'Двойной клик для приближения'
+        title: 'Клик для центрирования',
+        ariaLabel: 'Клик для центрирования'
       })
     }
   }
@@ -50,8 +50,6 @@ export default function Map({ objects, loading, language }: MapProps) {
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const infoWindowRootRef = useRef<Root | null>(null)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
-  const lastClickTimeRef = useRef<number>(0)
-  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const apiKey: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapId: string | undefined = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID
   const [mapReady, setMapReady] = useState(false)
@@ -123,10 +121,6 @@ export default function Map({ objects, loading, language }: MapProps) {
       if (infoWindowRootRef.current) {
         infoWindowRootRef.current.unmount()
         infoWindowRootRef.current = null
-      }
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current)
-        clickTimerRef.current = null
       }
       mapRef.current = null
       setMapReady(false)
@@ -232,102 +226,7 @@ export default function Map({ objects, loading, language }: MapProps) {
             return
           }
 
-          const handleClusterDoubleClick = () => {
-            if (clickTimerRef.current) {
-              clearTimeout(clickTimerRef.current)
-              clickTimerRef.current = null
-            }
-
-            const markers = (cluster as any)?.markers ?? []
-            const maxZoom = 21
-
-            if (markers.length === 1) {
-              const markerPosition = markers[0]?.position
-
-              if (markerPosition) {
-                map.panTo(markerPosition)
-                const currentZoom = map.getZoom() ?? 0
-                const targetZoom = Math.min(currentZoom + 2, maxZoom)
-                map.setZoom(targetZoom)
-              }
-
-              return true
-            }
-
-            const clusterBounds = (() => {
-              if ((cluster as any)?.bounds) {
-                return (cluster as any).bounds as google.maps.LatLngBounds
-              }
-
-              if (!markers.length) {
-                return null
-              }
-
-              const bounds = new google.maps.LatLngBounds()
-              markers.forEach((marker: google.maps.marker.AdvancedMarkerElement) => {
-                const markerPosition = marker.position
-                if (markerPosition instanceof google.maps.LatLng) {
-                  bounds.extend(markerPosition)
-                } else if (markerPosition) {
-                  bounds.extend(markerPosition)
-                }
-              })
-
-              return bounds
-            })()
-
-            if (clusterBounds && !clusterBounds.isEmpty()) {
-              map.fitBounds(clusterBounds, { top: 40, bottom: 40, left: 40, right: 40 })
-
-              const scheduleZoomAdjustment = () => {
-                const currentZoom = map.getZoom() ?? 0
-                const targetZoom = Math.min(currentZoom + 1, maxZoom)
-
-                if (targetZoom > currentZoom) {
-                  map.setZoom(targetZoom)
-                }
-              }
-
-              if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-                window.requestAnimationFrame(scheduleZoomAdjustment)
-              } else {
-                setTimeout(scheduleZoomAdjustment, 0)
-              }
-            }
-
-            return true
-          }
-
-          const clickDetail = (clusterClickEvent.domEvent as MouseEvent | undefined)?.detail ?? 0
-          if (clickDetail >= 2) {
-            lastClickTimeRef.current = Date.now()
-            if (handleClusterDoubleClick()) {
-              return
-            }
-          }
-
-          const now = Date.now()
-          const timeSinceLastClick = now - lastClickTimeRef.current
-          const isDoubleClick = timeSinceLastClick < 300 && clickTimerRef.current !== null
-          lastClickTimeRef.current = now
-
-          if (isDoubleClick) {
-            if (handleClusterDoubleClick()) {
-              return
-            }
-          }
-
-          if (clickTimerRef.current) {
-            clearTimeout(clickTimerRef.current)
-          }
-
-          clickTimerRef.current = setTimeout(() => {
-            map.panTo(position)
-            if (clickTimerRef.current) {
-              clearTimeout(clickTimerRef.current)
-              clickTimerRef.current = null
-            }
-          }, 300)
+          map.panTo(position)
         }
       })
     }
@@ -341,7 +240,7 @@ export default function Map({ objects, loading, language }: MapProps) {
     )
   }
 
-   if (mapError) {
+  if (mapError) {
     return (
       <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Typography>{mapError}</Typography>
