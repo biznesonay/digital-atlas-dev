@@ -62,7 +62,7 @@ export default function Map({ objects, loading, language }: MapProps) {
 
     const normalizedMapId = mapId || undefined
 
-    loadGoogleMaps(language, normalizedMapId)
+    loadGoogleMaps({ language })
       .then(() => {
         if (!isMounted || !mapContainerRef.current) return
 
