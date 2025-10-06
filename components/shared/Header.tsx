@@ -1,4 +1,5 @@
 import { AppBar, Toolbar, Typography, Box } from '@mui/material'
+import Link from 'next/link'
 import LanguageSwitcher from './LanguageSwitcher'
 import { LanguageCode, THEME_COLORS } from '@/lib/constants'
 
@@ -24,14 +25,16 @@ export default function Header({ language, onLanguageChange }: HeaderProps) {
     >
       <Toolbar>
         <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-          <img 
-            src="/images/logo.png" 
-            alt="Logo" 
-            style={{ height: 40, marginRight: 16 }}
-            onError={(e) => {
-              e.currentTarget.style.display = 'none'
-            }}
-          />
+          <Link href="https://digital-atlas.kz/" aria-label="Digital Atlas homepage">
+            <img
+              src="/images/logo.png"
+              alt="Logo"
+              style={{ height: 40, marginRight: 16 }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+          </Link>
         </Box>
         
         <Typography 
