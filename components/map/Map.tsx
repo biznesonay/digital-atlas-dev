@@ -84,6 +84,12 @@ export default function Map({ objects, loading, language }: MapProps) {
           padding: MAP_UI_PADDING
         })
 
+        if ('setPadding' in mapRef.current && typeof mapRef.current.setPadding === 'function') {
+          mapRef.current.setPadding(MAP_UI_PADDING)
+        } else {
+          mapRef.current.set('padding', MAP_UI_PADDING)
+        }
+
         const bounds = new google.maps.LatLngBounds(
           new google.maps.LatLng(KAZAKHSTAN_BOUNDS.south, KAZAKHSTAN_BOUNDS.west),
           new google.maps.LatLng(KAZAKHSTAN_BOUNDS.north, KAZAKHSTAN_BOUNDS.east)
