@@ -365,11 +365,12 @@ export default function FilterPanel({
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Box
                           sx={{
-                            width: 12,
-                            height: 12,
+                            width: '12px',
+                            height: '12px',
                             borderRadius: '50%',
                             backgroundColor: type.color,
-                            mr: 1
+                            mr: 1,
+                            flexShrink: 0
                           }}
                         />
                         {type.name}
