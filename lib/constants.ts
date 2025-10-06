@@ -19,11 +19,14 @@ export const DEFAULT_MAP_OPTIONS: google.maps.MapOptions = {
   mapTypeControl: false,
   streetViewControl: false,
   fullscreenControl: true,
-  zoomControl: true,
-  restriction: {
-    latLngBounds: KAZAKHSTAN_BOUNDS,
-    strictBounds: false
-  }
+  zoomControl: true
+}
+
+export const MAP_UI_PADDING: google.maps.Padding = {
+  top: 96,
+  right: 24,
+  bottom: 24,
+  left: 24
 }
 
 // Настройки кластеризации
