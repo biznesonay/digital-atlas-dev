@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadGoogleMaps } from '@/hooks/useGoogleMaps'
 import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer'
-import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER } from '@/lib/constants'
+import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER, MAP_UI_PADDING } from '@/lib/constants'
 import { CircularProgress, Box, Typography } from '@mui/material'
 import MarkerInfo from './MarkerInfo'
 import { createRoot, Root } from 'react-dom/client'
@@ -80,6 +80,7 @@ export default function Map({ objects, loading, language }: MapProps) {
           mapOptions.mapId = normalizedMapId
         }
         mapRef.current = new google.maps.Map(mapContainerRef.current, mapOptions)
+        mapRef.current.setPadding(MAP_UI_PADDING)
 
         const bounds = new google.maps.LatLngBounds(
           new google.maps.LatLng(KAZAKHSTAN_BOUNDS.south, KAZAKHSTAN_BOUNDS.west),
