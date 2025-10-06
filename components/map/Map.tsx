@@ -41,6 +41,19 @@ const createClusterRenderer = () => {
   }
 }
 
+const applyMapPadding = (map: google.maps.Map) => {
+  const mapWithOptionalPadding = map as google.maps.Map & {
+    setPadding?: (padding: google.maps.Padding) => void
+  }
+
+  if (typeof mapWithOptionalPadding.setPadding === 'function') {
+    mapWithOptionalPadding.setPadding(MAP_UI_PADDING)
+    return
+  }
+
+  map.set('padding', MAP_UI_PADDING)
+}
+
 export default function Map({ objects, loading, language }: MapProps) {
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
@@ -89,6 +102,8 @@ export default function Map({ objects, loading, language }: MapProps) {
         } else {
           mapRef.current.set('padding', MAP_UI_PADDING)
         }
+
+        applyMapPadding(mapRef.current)
 
         const bounds = new google.maps.LatLngBounds(
           new google.maps.LatLng(KAZAKHSTAN_BOUNDS.south, KAZAKHSTAN_BOUNDS.west),
