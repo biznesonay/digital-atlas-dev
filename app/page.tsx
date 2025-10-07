@@ -5,7 +5,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { theme } from '@/lib/theme'
 import Header from '@/components/shared/Header'
-import Map from '@/components/map/Map'
+import AtlasMap from '@/components/map/Map'
 import FilterPanel from '@/components/map/FilterPanel'
 import { MapFilters, ApiObject } from '@/lib/types'
 import { LanguageCode } from '@/lib/constants'
@@ -103,7 +103,7 @@ export default function HomePage() {
           onLanguageChange={handleLanguageChange}
         />
         <div style={{ flex: 1, position: 'relative' }}>
-          <Map
+          <AtlasMap
             objects={objects}
             loading={loading}
             language={language}

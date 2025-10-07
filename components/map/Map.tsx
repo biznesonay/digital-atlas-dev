@@ -174,7 +174,7 @@ const applyMapPadding = (map: google.maps.Map) => {
   map.set('padding', MAP_UI_PADDING)
 }
 
-export default function Map({ objects, loading, language, selectedTypeIds }: MapProps) {
+export default function AtlasMap({ objects, loading, language, selectedTypeIds }: MapProps) {
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer<MarkerLike> | null>(null)
   const markersRef = useRef<MarkerWithMeta[]>([])
