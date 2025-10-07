@@ -261,7 +261,7 @@ export default function AtlasMap({ objects, loading, language, selectedTypeIds }
 
   useEffect(() => {
     if (!mapReady) return
-    if (!mapRef.current || loading) return
+    if (!mapRef.current) return
     if (!(window as any).google || !(window as any).google.maps) {
       setMapError('Google Maps SDK not available')
       return
@@ -284,6 +284,8 @@ export default function AtlasMap({ objects, loading, language, selectedTypeIds }
       infoWindowRootRef.current.unmount()
       infoWindowRootRef.current = null
     }
+
+    if (loading) return
 
     const newMarkers: MarkerWithMeta[] = []
 
