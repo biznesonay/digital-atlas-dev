@@ -23,7 +23,9 @@ interface MarkerMeta {
   color?: string | null
 }
 
-type MarkerWithMeta = Marker & {
+type MarkerLike = Marker | google.maps.marker.AdvancedMarkerElement
+
+type MarkerWithMeta = MarkerLike & {
   __markerMeta?: MarkerMeta
 }
 
@@ -87,7 +89,7 @@ const getTypePriority = (meta?: MarkerMeta) => {
 const createClusterRenderer = (selectedTypeIds: string[]): Renderer => {
   const selectedSet = selectedTypeIds.length > 0 ? new Set(selectedTypeIds) : null
 
-  const getDominantMeta = (markers: Marker[]) => {
+  const getDominantMeta = (markers: MarkerLike[]) => {
     const counts = new Map<string, { count: number; meta: MarkerMeta }>()
 
     markers.forEach(marker => {
