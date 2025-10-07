@@ -136,7 +136,8 @@ const createClusterRenderer = (selectedTypeIds: string[]): Renderer<MarkerLike> 
   }
 
   return {
-    render: ({ count, position, markers }) => {
+    render: (cluster, _stats, _map) => {
+      const { count, position, markers } = cluster
       const dominantMeta = markers ? getDominantMeta(markers) : undefined
       const color = dominantMeta?.color || DEFAULT_CLUSTER_COLOR
       const size = count < 10 ? 40 : count < 50 ? 50 : 60
@@ -156,7 +157,7 @@ const createClusterRenderer = (selectedTypeIds: string[]): Renderer<MarkerLike> 
         position,
         content: div,
         zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count
-      })
+      }) as Marker
     }
   }
 }
