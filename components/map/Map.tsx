@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadGoogleMaps } from '@/hooks/useGoogleMaps'
 import { MarkerClusterer, GridAlgorithm, Renderer } from '@googlemaps/markerclusterer'
+import type { Marker } from '@googlemaps/markerclusterer'
 import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER, MAP_UI_PADDING } from '@/lib/constants'
 import { CircularProgress, Box, Typography } from '@mui/material'
 import MarkerInfo from './MarkerInfo'
@@ -22,7 +23,9 @@ interface MarkerMeta {
   color?: string | null
 }
 
-type MarkerWithMeta = google.maps.marker.AdvancedMarkerElement & {
+type MarkerLike = Marker | google.maps.marker.AdvancedMarkerElement
+
+type MarkerWithMeta = MarkerLike & {
   __markerMeta?: MarkerMeta
 }
 
@@ -83,10 +86,10 @@ const getTypePriority = (meta?: MarkerMeta) => {
 }
 
 // Кастомный рендерер для кластеров
-const createClusterRenderer = (selectedTypeIds: string[]): Renderer => {
+const createClusterRenderer = (selectedTypeIds: string[]): Renderer<MarkerLike> => {
   const selectedSet = selectedTypeIds.length > 0 ? new Set(selectedTypeIds) : null
 
-  const getDominantMeta = (markers: google.maps.marker.AdvancedMarkerElement[]) => {
+  const getDominantMeta = (markers: MarkerLike[]) => {
     const counts = new Map<string, { count: number; meta: MarkerMeta }>()
 
     markers.forEach(marker => {
@@ -173,7 +176,7 @@ const applyMapPadding = (map: google.maps.Map) => {
 
 export default function Map({ objects, loading, language, selectedTypeIds }: MapProps) {
   const mapRef = useRef<google.maps.Map | null>(null)
-  const clustererRef = useRef<MarkerClusterer | null>(null)
+  const clustererRef = useRef<MarkerClusterer<MarkerLike> | null>(null)
   const markersRef = useRef<MarkerWithMeta[]>([])
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const infoWindowRootRef = useRef<Root | null>(null)
@@ -330,11 +333,11 @@ export default function Map({ objects, loading, language, selectedTypeIds }: Map
     markersRef.current = newMarkers
 
     if (newMarkers.length > 0) {
-      clustererRef.current = new MarkerClusterer({
+      clustererRef.current = new MarkerClusterer<MarkerLike>({
         map: mapRef.current!,
         markers: newMarkers,
         renderer: createClusterRenderer(selectedTypeIds),
-        algorithm: new GridAlgorithm({
+        algorithm: new GridAlgorithm<MarkerLike>({
           gridSize: 60,
           maxDistance: 40000
         }),
