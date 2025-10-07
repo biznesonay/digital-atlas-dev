@@ -155,7 +155,7 @@ const createClusterRenderer = (selectedTypeIds: string[]): Renderer<MarkerLike> 
       return new google.maps.marker.AdvancedMarkerElement({
         position,
         content: div,
-        zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count
+        zIndex: 10 + count
       })
     }
   }
