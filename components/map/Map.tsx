@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { loadGoogleMaps } from '@/hooks/useGoogleMaps'
-import { MarkerClusterer, GridAlgorithm } from '@googlemaps/markerclusterer'
+import { MarkerClusterer, GridAlgorithm, Renderer } from '@googlemaps/markerclusterer'
 import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER, MAP_UI_PADDING } from '@/lib/constants'
 import { CircularProgress, Box, Typography } from '@mui/material'
 import MarkerInfo from './MarkerInfo'
@@ -12,15 +12,132 @@ interface MapProps {
   objects: any[]
   loading: boolean
   language: string
+  selectedTypeIds: string[]
+}
+
+interface MarkerMeta {
+  typeId?: string | null
+  typeCode?: string | null
+  typeName?: string | null
+  color?: string | null
+}
+
+type MarkerWithMeta = google.maps.marker.AdvancedMarkerElement & {
+  __markerMeta?: MarkerMeta
+}
+
+const DEFAULT_CLUSTER_COLOR = '#1976D2'
+
+const TYPE_PRIORITY_GROUPS: string[][] = [
+  ['TECHNOPARK', 'Технопарк'],
+  ['SEZ', 'СЭЗ', 'АЭА'],
+  ['IT_HUB', 'IT HUB', 'ITHUB', 'IT-хаб', 'IT хаб', 'ИТ-ХАБ'],
+  ['INCUBATOR', 'Бизнес-инкубатор', 'Инкубатор'],
+  ['ACCELERATOR', 'Акселератор'],
+  ['SCIENCE_PARK', 'Научный парк'],
+  ['LABORATORY', 'Лаборатория'],
+  ['FAB_LAB', 'FABLAB', 'Fab Lab'],
+  ['COWORKING', 'Коворкинг'],
+  ['VC_FUND', 'VENTURE_FUND', 'Венчурный фонд'],
+  ['BUSINESS_ANGEL', 'BUSINESS_ANGELS', 'Бизнес-ангелы'],
+  ['CROWDFUNDING', 'Краудфандинг']
+]
+
+const normalizeTypeKey = (value?: string | null) => {
+  if (!value) return ''
+  return value
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/[^a-z0-9а-я]+/gi, '_')
+}
+
+const TYPE_PRIORITY_MAP = (() => {
+  const map = new Map<string, number>()
+  TYPE_PRIORITY_GROUPS.forEach((group, index) => {
+    group.forEach(key => {
+      const normalized = normalizeTypeKey(key)
+      if (normalized && !map.has(normalized)) {
+        map.set(normalized, index)
+      }
+    })
+  })
+  return map
+})()
+
+const getTypePriority = (meta?: MarkerMeta) => {
+  if (!meta) return TYPE_PRIORITY_MAP.size
+
+  const candidates = [meta.typeCode, meta.typeName]
+
+  for (const candidate of candidates) {
+    const normalized = normalizeTypeKey(candidate)
+    if (!normalized) continue
+    if (TYPE_PRIORITY_MAP.has(normalized)) {
+      return TYPE_PRIORITY_MAP.get(normalized) ?? TYPE_PRIORITY_MAP.size
+    }
+  }
+
+  return TYPE_PRIORITY_MAP.size
 }
 
 // Кастомный рендерер для кластеров
-const createClusterRenderer = () => {
+const createClusterRenderer = (selectedTypeIds: string[]): Renderer => {
+  const selectedSet = selectedTypeIds.length > 0 ? new Set(selectedTypeIds) : null
+
+  const getDominantMeta = (markers: google.maps.marker.AdvancedMarkerElement[]) => {
+    const counts = new Map<string, { count: number; meta: MarkerMeta }>()
+
+    markers.forEach(marker => {
+      const markerWithMeta = marker as MarkerWithMeta
+      const meta = markerWithMeta.__markerMeta
+      if (!meta) return
+
+      if (selectedSet && meta.typeId && !selectedSet.has(meta.typeId)) {
+        return
+      }
+
+      const key = meta.typeId || meta.typeCode || meta.typeName || meta.color || 'default'
+      const existing = counts.get(key)
+      if (existing) {
+        existing.count += 1
+      } else {
+        counts.set(key, { count: 1, meta })
+      }
+    })
+
+    if (counts.size === 0) {
+      if (!selectedSet) {
+        const fallbackMarker = markers[0] as MarkerWithMeta | undefined
+        return fallbackMarker?.__markerMeta
+      }
+      return undefined
+    }
+
+    const sorted = Array.from(counts.values()).sort((a, b) => {
+      if (b.count !== a.count) {
+        return b.count - a.count
+      }
+
+      const priorityA = getTypePriority(a.meta)
+      const priorityB = getTypePriority(b.meta)
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB
+      }
+
+      return 0
+    })
+
+    return sorted[0]?.meta
+  }
+
   return {
-    render: ({ count, position }: any) => {
-      const color = count < 10 ? '#1976D2' : count < 50 ? '#388E3C' : '#D32F2F'
+    render: ({ count, position, markers }) => {
+      const dominantMeta = markers ? getDominantMeta(markers) : undefined
+      const color = dominantMeta?.color || DEFAULT_CLUSTER_COLOR
       const size = count < 10 ? 40 : count < 50 ? 50 : 60
-      
+
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
           <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" stroke="white" stroke-width="2"/>
@@ -54,10 +171,10 @@ const applyMapPadding = (map: google.maps.Map) => {
   map.set('padding', MAP_UI_PADDING)
 }
 
-export default function Map({ objects, loading, language }: MapProps) {
+export default function Map({ objects, loading, language, selectedTypeIds }: MapProps) {
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
-  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+  const markersRef = useRef<MarkerWithMeta[]>([])
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null)
   const infoWindowRootRef = useRef<Root | null>(null)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
@@ -166,13 +283,13 @@ export default function Map({ objects, loading, language }: MapProps) {
       infoWindowRootRef.current = null
     }
 
-    const newMarkers: google.maps.marker.AdvancedMarkerElement[] = []
-    
+    const newMarkers: MarkerWithMeta[] = []
+
     objects.forEach(obj => {
       if (obj.latitude == null || obj.longitude == null) return
-      
+
       const markerContent = document.createElement('div')
-      markerContent.style.backgroundColor = obj.type?.color || '#1976D2'
+      markerContent.style.backgroundColor = obj.type?.color || DEFAULT_CLUSTER_COLOR
       markerContent.style.border = '2px solid white'
       markerContent.style.borderRadius = '50%'
       markerContent.style.height = '16px'
@@ -183,7 +300,14 @@ export default function Map({ objects, loading, language }: MapProps) {
         position: { lat: obj.latitude, lng: obj.longitude },
         title: obj.name || '',
         content: markerContent
-      })
+      }) as MarkerWithMeta
+
+      marker.__markerMeta = {
+        typeId: obj.type?.id,
+        typeCode: obj.type?.code,
+        typeName: obj.type?.name,
+        color: obj.type?.color || DEFAULT_CLUSTER_COLOR
+      }
 
       marker.addListener('click', () => {
         if (!infoWindowRef.current) return
@@ -209,7 +333,7 @@ export default function Map({ objects, loading, language }: MapProps) {
       clustererRef.current = new MarkerClusterer({
         map: mapRef.current!,
         markers: newMarkers,
-        renderer: createClusterRenderer(),
+        renderer: createClusterRenderer(selectedTypeIds),
         algorithm: new GridAlgorithm({
           gridSize: 60,
           maxDistance: 40000
@@ -243,7 +367,7 @@ export default function Map({ objects, loading, language }: MapProps) {
         }
       })
     }
-  }, [objects, loading, language, mapReady])
+  }, [objects, loading, language, mapReady, selectedTypeIds])
 
   if (!apiKey || !mapId) {
     return (
