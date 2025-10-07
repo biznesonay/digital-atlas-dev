@@ -103,10 +103,11 @@ export default function HomePage() {
           onLanguageChange={handleLanguageChange}
         />
         <div style={{ flex: 1, position: 'relative' }}>
-          <Map 
+          <Map
             objects={objects}
             loading={loading}
             language={language}
+            selectedTypeIds={filters.typeIds}
           />
           <FilterPanel
             filters={filters}
