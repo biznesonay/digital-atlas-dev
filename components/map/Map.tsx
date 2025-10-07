@@ -237,13 +237,13 @@ export default function AtlasMap({ objects, loading, language, selectedTypeIds }
 
     return () => {
       isMounted = false
-      clustererRef.current?.setMap(null)
       markersRef.current.forEach(marker => {
         MarkerUtils.setMap(marker, null)
       })
       markersRef.current = []
       if (clustererRef.current) {
         clustererRef.current.clearMarkers(true)
+        clustererRef.current.setMap(null)
         clustererRef.current = null
       }
       if (infoWindowRef.current) {
@@ -274,6 +274,7 @@ export default function AtlasMap({ objects, loading, language, selectedTypeIds }
       if (clustererRef.current?.getMap()) {
         clustererRef.current.clearMarkers(true)
       }
+      clustererRef.current.setMap(null)
       clustererRef.current = null
     }
 
