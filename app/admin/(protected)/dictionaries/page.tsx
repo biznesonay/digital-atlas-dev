@@ -6,6 +6,7 @@ import DirectionsIcon from '@mui/icons-material/Directions'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { getAuthSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import prisma from '@/lib/prisma'
 
 export default async function DictionariesPage() {
   const session = await getAuthSession()
@@ -14,6 +15,12 @@ export default async function DictionariesPage() {
     redirect('/admin/dashboard')
   }
 
+  const [typesCount, regionsCount, directionsCount] = await Promise.all([
+    prisma.infrastructureType.count(),
+    prisma.region.count(),
+    prisma.priorityDirection.count()
+  ])
+
   const dictionaries = [
     {
       title: 'Типы инфраструктуры',
@@ -21,7 +28,7 @@ export default async function DictionariesPage() {
       icon: <CategoryIcon fontSize="large" />,
       color: '#1976D2',
       link: '/admin/dictionaries/types',
-      count: 5
+      count: typesCount
     },
     {
       title: 'Регионы',
@@ -29,7 +36,7 @@ export default async function DictionariesPage() {
       icon: <LocationOnIcon fontSize="large" />,
       color: '#388E3C',
       link: '/admin/dictionaries/regions',
-      count: 21
+      count: regionsCount
     },
     {
       title: 'Приоритетные направления',
@@ -37,7 +44,7 @@ export default async function DictionariesPage() {
       icon: <DirectionsIcon fontSize="large" />,
       color: '#7B1FA2',
       link: '/admin/dictionaries/directions',
-      count: 8
+      count: directionsCount
     }
   ]
 

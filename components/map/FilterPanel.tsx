@@ -25,6 +25,8 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import SearchIcon from '@mui/icons-material/Search'
 import ClearIcon from '@mui/icons-material/Clear'
 import ListIcon from '@mui/icons-material/List'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { MapFilters } from '@/lib/types'
 import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import ObjectsList from './ObjectsList'
@@ -61,6 +63,7 @@ export default function FilterPanel({
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const latestQueryRef = useRef<string>(filters.search || '')
+  const [collapsed, setCollapsed] = useState(false)
 
   const labels = {
     ru: {
@@ -72,7 +75,9 @@ export default function FilterPanel({
       directions: 'Приоритетные направления',
       reset: 'Сбросить фильтры',
       objectsList: 'Список объектов',
-      clear: 'Очистить'
+      clear: 'Очистить',
+      collapse: 'Свернуть фильтры',
+      expand: 'Показать фильтры'
     },
     kz: {
       filters: 'Сүзгілер',
@@ -83,7 +88,9 @@ export default function FilterPanel({
       directions: 'Басым бағыттар',
       reset: 'Сүзгілерді тастау',
       objectsList: 'Объектілер тізімі',
-      clear: 'Тазалау'
+      clear: 'Тазалау',
+      collapse: 'Сүзгілерді жасыру',
+      expand: 'Сүзгілерді көрсету'
     },
     en: {
       filters: 'Filters',
@@ -94,11 +101,14 @@ export default function FilterPanel({
       directions: 'Priority directions',
       reset: 'Reset filters',
       objectsList: 'Objects list',
-      clear: 'Clear'
+      clear: 'Clear',
+      collapse: 'Collapse filters',
+      expand: 'Show filters'
     }
   }
 
   const t = labels[language as keyof typeof labels] || labels.ru
+  const toggleLabel = collapsed ? t.expand : t.collapse
 
   // Загрузка справочников
   useEffect(() => {
@@ -242,221 +252,246 @@ export default function FilterPanel({
           top: 80,
           left: 20,
           zIndex: 1000,
-          width: { xs: 'calc(100% - 40px)', sm: 320 },
+          width: collapsed ? 56 : { xs: 'calc(100% - 40px)', sm: 320 },
           maxHeight: 'calc(100vh - 100px)',
-          overflow: 'auto',
-          bottom: '20px'
+          overflow: collapsed ? 'visible' : 'auto',
+          bottom: '20px',
+          p: 0,
+          transition: 'width 0.3s ease'
         }}
       >
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            {t.filters}
-            {activeFiltersCount > 0 && (
-             <Chip
-                component="span"
-                label={activeFiltersCount}
-                size="small"
-                color="primary"
-                sx={{ ml: 1 }}
-              />
-            )}
-          </Typography>
-          
-          <Box sx={{ mb: 2 }}>
-            <Chip 
-              label={`${t.found}: ${totalObjects}`} 
-              color="primary" 
-              variant="outlined"
-            />
-            <IconButton
-              size="small"
-              onClick={() => setShowObjectsList(true)}
-              sx={{ ml: 1 }}
-              title={t.objectsList}
-            >
-              <Badge badgeContent={totalObjects} color="primary" max={999}>
-                <ListIcon />
-              </Badge>
-            </IconButton>
-          </Box>
-
-          <Autocomplete
-            freeSolo
-            options={suggestions}
-            inputValue={searchInput}
-            onInputChange={(_e, value, reason) => {
-              if (reason === 'input') {
-                handleSearchChange(value)
-              }
-            }}
-            onChange={(_e, value) => {
-              if (typeof value === 'string') {
-                setSearchInput(value)
-                onFilterChange({ search: value })
-                setSuggestions([])
-                latestQueryRef.current = value
-              }
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                fullWidth
-                size="small"
-                label={t.search}
-                margin="normal"
-                InputProps={{
-                  ...params.InputProps,
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <>
-                      {searchInput && (
-                        <InputAdornment position="end">
-                          <IconButton size="small" onClick={handleClearSearch}>
-                            <ClearIcon />
-                          </IconButton>
-                        </InputAdornment>
-                      )}
-                      {params.InputProps.endAdornment}
-                    </>
-                  )
-                }}
-              />
-            )}
-          />
-
-          <Divider sx={{ my: 2 }} />
-
-          <Accordion defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>
-                {t.types}
-                {filters.typeIds.length > 0 && (
-                  <Chip
-                    component="span"
-                    label={filters.typeIds.length}
-                    size="small"
-                    sx={{ ml: 1 }}
-                  />
-                )}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'space-between',
+            p: collapsed ? 1 : 2,
+            pb: collapsed ? 1 : 0
+          }}
+        >
+          {!collapsed && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography variant="h6" gutterBottom sx={{ mr: 1 }}>
+                {t.filters}
               </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <FormGroup>
-                {types.map((type) => (
-                  <FormControlLabel
-                    key={type.id}
-                    control={
-                      <Checkbox
-                        checked={filters.typeIds.includes(type.id)}
-                        onChange={() => handleTypeToggle(type.id)}
-                        sx={{
-                          color: type.color,
-                          '&.Mui-checked': {
-                            color: type.color
-                          }
-                        }}
-                      />
-                    }
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Box
+              {activeFiltersCount > 0 && (
+                <Chip
+                  component="span"
+                  label={activeFiltersCount}
+                  size="small"
+                  color="primary"
+                />
+              )}
+            </Box>
+          )}
+          <IconButton
+            size="small"
+            onClick={() => setCollapsed(prev => !prev)}
+            aria-label={toggleLabel}
+            title={toggleLabel}
+          >
+            {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        </Box>
+
+        {!collapsed && (
+          <Box sx={{ px: 2, pb: 2 }}>
+            <Box sx={{ mb: 2 }}>
+              <Chip
+                label={`${t.found}: ${totalObjects}`}
+                color="primary"
+                variant="outlined"
+              />
+              <IconButton
+                size="small"
+                onClick={() => setShowObjectsList(true)}
+                sx={{ ml: 1 }}
+                title={t.objectsList}
+              >
+                <Badge badgeContent={totalObjects} color="primary" max={999}>
+                  <ListIcon />
+                </Badge>
+              </IconButton>
+            </Box>
+
+            <Autocomplete
+              freeSolo
+              options={suggestions}
+              inputValue={searchInput}
+              onInputChange={(_e, value, reason) => {
+                if (reason === 'input') {
+                  handleSearchChange(value)
+                }
+              }}
+              onChange={(_e, value) => {
+                if (typeof value === 'string') {
+                  setSearchInput(value)
+                  onFilterChange({ search: value })
+                  setSuggestions([])
+                  latestQueryRef.current = value
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  fullWidth
+                  size="small"
+                  label={t.search}
+                  margin="normal"
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <>
+                        {searchInput && (
+                          <InputAdornment position="end">
+                            <IconButton size="small" onClick={handleClearSearch}>
+                              <ClearIcon />
+                            </IconButton>
+                          </InputAdornment>
+                        )}
+                        {params.InputProps.endAdornment}
+                      </>
+                    )
+                  }}
+                />
+              )}
+            />
+
+            <Divider sx={{ my: 2 }} />
+
+            <Accordion defaultExpanded>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>
+                  {t.types}
+                  {filters.typeIds.length > 0 && (
+                    <Chip
+                      component="span"
+                      label={filters.typeIds.length}
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <FormGroup>
+                  {types.map((type) => (
+                    <FormControlLabel
+                      key={type.id}
+                      control={
+                        <Checkbox
+                          checked={filters.typeIds.includes(type.id)}
+                          onChange={() => handleTypeToggle(type.id)}
                           sx={{
-                            width: '12px',
-                            height: '12px',
-                            borderRadius: '50%',
-                            backgroundColor: type.color,
-                            mr: 1,
-                            flexShrink: 0
+                            color: type.color,
+                            '&.Mui-checked': {
+                              color: type.color
+                            }
                           }}
                         />
-                        {type.name}
-                      </Box>
-                    }
-                  />
-                ))}
-              </FormGroup>
-            </AccordionDetails>
-          </Accordion>
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box
+                            sx={{
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '50%',
+                              backgroundColor: type.color,
+                              mr: 1,
+                              flexShrink: 0
+                            }}
+                          />
+                          {type.name}
+                        </Box>
+                      }
+                    />
+                  ))}
+                </FormGroup>
+              </AccordionDetails>
+            </Accordion>
 
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>
-                {t.regions}
-                {filters.regionIds.length > 0 && (
-                  <Chip
-                    component="span"
-                    label={filters.regionIds.length}
-                    size="small"
-                    sx={{ ml: 1 }}
-                  />
-                )}
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <FormGroup>
-                {regions.map((region) => (
-                  <FormControlLabel
-                    key={region.id}
-                    control={
-                      <Checkbox
-                        checked={filters.regionIds.includes(region.id)}
-                        onChange={() => handleRegionToggle(region.id)}
-                      />
-                    }
-                    label={region.name}
-                  />
-                ))}
-              </FormGroup>
-            </AccordionDetails>
-          </Accordion>
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>
+                  {t.regions}
+                  {filters.regionIds.length > 0 && (
+                    <Chip
+                      component="span"
+                      label={filters.regionIds.length}
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <FormGroup>
+                  {regions.map((region) => (
+                    <FormControlLabel
+                      key={region.id}
+                      control={
+                        <Checkbox
+                          checked={filters.regionIds.includes(region.id)}
+                          onChange={() => handleRegionToggle(region.id)}
+                        />
+                      }
+                      label={region.name}
+                    />
+                  ))}
+                </FormGroup>
+              </AccordionDetails>
+            </Accordion>
 
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>
-                {t.directions}
-                {filters.directionIds.length > 0 && (
-                  <Chip
-                    component="span"
-                    label={filters.directionIds.length}
-                    size="small"
-                    sx={{ ml: 1 }}
-                  />
-                )}
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <FormGroup>
-                {directions.map((direction) => (
-                  <FormControlLabel
-                    key={direction.id}
-                    control={
-                      <Checkbox
-                        checked={filters.directionIds.includes(direction.id)}
-                        onChange={() => handleDirectionToggle(direction.id)}
-                      />
-                    }
-                    label={direction.name}
-                  />
-                ))}
-              </FormGroup>
-            </AccordionDetails>
-          </Accordion>
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>
+                  {t.directions}
+                  {filters.directionIds.length > 0 && (
+                    <Chip
+                      component="span"
+                      label={filters.directionIds.length}
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <FormGroup>
+                  {directions.map((direction) => (
+                    <FormControlLabel
+                      key={direction.id}
+                      control={
+                        <Checkbox
+                          checked={filters.directionIds.includes(direction.id)}
+                          onChange={() => handleDirectionToggle(direction.id)}
+                        />
+                      }
+                      label={direction.name}
+                    />
+                  ))}
+                </FormGroup>
+              </AccordionDetails>
+            </Accordion>
 
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={onReset}
-            sx={{ mt: 2 }}
-            disabled={activeFiltersCount === 0}
-          >
-            {t.reset}
-          </Button>
-        </Box>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={onReset}
+              sx={{ mt: 2 }}
+              disabled={activeFiltersCount === 0}
+            >
+              {t.reset}
+            </Button>
+          </Box>
+        )}
       </Paper>
 
       <ObjectsList

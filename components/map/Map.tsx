@@ -15,10 +15,38 @@ interface MapProps {
 }
 
 // Кастомный рендерер для кластеров
+type ClusterRenderParams = {
+  count: number
+  position: google.maps.LatLng
+  markers: google.maps.marker.AdvancedMarkerElement[]
+}
+
+const DEFAULT_CLUSTER_COLORS = {
+  small: '#1976D2',
+  medium: '#388E3C',
+  large: '#D32F2F'
+} as const
+
 const createClusterRenderer = () => {
   return {
-    render: ({ count, position }: any) => {
-      const color = count < 10 ? '#1976D2' : count < 50 ? '#388E3C' : '#D32F2F'
+    render: ({ count, position, markers }: ClusterRenderParams) => {
+      const collectedColors = markers
+        .map(marker => {
+          const element = marker.content as HTMLElement | null
+          return element?.dataset?.markerColor
+        })
+        .filter((color): color is string => Boolean(color))
+
+      const uniqueColors = Array.from(new Set(collectedColors))
+
+      const defaultColor =
+        count < 10
+          ? DEFAULT_CLUSTER_COLORS.small
+          : count < 50
+            ? DEFAULT_CLUSTER_COLORS.medium
+            : DEFAULT_CLUSTER_COLORS.large
+
+      const color = uniqueColors.length === 1 ? uniqueColors[0] : defaultColor
       const size = count < 10 ? 40 : count < 50 ? 50 : 60
       
       const svg = `
@@ -142,21 +170,20 @@ export default function Map({ objects, loading, language }: MapProps) {
 
   useEffect(() => {
     if (!mapReady) return
-    if (!mapRef.current || loading) return
+    if (!mapRef.current) return
     if (!(window as any).google || !(window as any).google.maps) {
       setMapError('Google Maps SDK not available')
       return
     }
 
-    markersRef.current.forEach(marker => (marker.map = null))
-    markersRef.current = []
-
     if (clustererRef.current) {
-      if (clustererRef.current?.getMap()) {
-        clustererRef.current.clearMarkers(true)
-      }
+      clustererRef.current.clearMarkers(true)
+      clustererRef.current.setMap(null)
       clustererRef.current = null
     }
+
+    markersRef.current.forEach(marker => (marker.map = null))
+    markersRef.current = []
 
     if (infoWindowRef.current) {
       infoWindowRef.current.close()
@@ -166,18 +193,24 @@ export default function Map({ objects, loading, language }: MapProps) {
       infoWindowRootRef.current = null
     }
 
+    if (loading) {
+      return
+    }
+
     const newMarkers: google.maps.marker.AdvancedMarkerElement[] = []
     
     objects.forEach(obj => {
       if (obj.latitude == null || obj.longitude == null) return
-      
+
       const markerContent = document.createElement('div')
-      markerContent.style.backgroundColor = obj.type?.color || '#1976D2'
+      const markerColor = obj.type?.color || DEFAULT_CLUSTER_COLORS.small
+      markerContent.style.backgroundColor = markerColor
       markerContent.style.border = '2px solid white'
       markerContent.style.borderRadius = '50%'
       markerContent.style.height = '16px'
       markerContent.style.width = '16px'
       markerContent.style.boxSizing = 'border-box'
+      markerContent.dataset.markerColor = markerColor
 
       const marker = new google.maps.marker.AdvancedMarkerElement({
         position: { lat: obj.latitude, lng: obj.longitude },
