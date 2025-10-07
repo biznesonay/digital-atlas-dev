@@ -23,7 +23,7 @@ interface MarkerMeta {
   color?: string | null
 }
 
-type MarkerLike = Marker
+type MarkerLike = Marker | google.maps.marker.AdvancedMarkerElement
 
 type MarkerWithMeta = MarkerLike & {
   __markerMeta?: MarkerMeta
