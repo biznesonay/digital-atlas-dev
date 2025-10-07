@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadGoogleMaps } from '@/hooks/useGoogleMaps'
 import { MarkerClusterer, GridAlgorithm, Renderer } from '@googlemaps/markerclusterer'
+import type { Marker } from '@googlemaps/markerclusterer'
 import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER, MAP_UI_PADDING } from '@/lib/constants'
 import { CircularProgress, Box, Typography } from '@mui/material'
 import MarkerInfo from './MarkerInfo'
@@ -22,7 +23,7 @@ interface MarkerMeta {
   color?: string | null
 }
 
-type MarkerWithMeta = google.maps.marker.AdvancedMarkerElement & {
+type MarkerWithMeta = Marker & {
   __markerMeta?: MarkerMeta
 }
 
@@ -86,7 +87,7 @@ const getTypePriority = (meta?: MarkerMeta) => {
 const createClusterRenderer = (selectedTypeIds: string[]): Renderer => {
   const selectedSet = selectedTypeIds.length > 0 ? new Set(selectedTypeIds) : null
 
-  const getDominantMeta = (markers: google.maps.marker.AdvancedMarkerElement[]) => {
+  const getDominantMeta = (markers: Marker[]) => {
     const counts = new Map<string, { count: number; meta: MarkerMeta }>()
 
     markers.forEach(marker => {
@@ -133,7 +134,8 @@ const createClusterRenderer = (selectedTypeIds: string[]): Renderer => {
   }
 
   return {
-    render: ({ count, position, markers }) => {
+    render: (cluster, _stats, _map) => {
+      const { count, position, markers } = cluster
       const dominantMeta = markers ? getDominantMeta(markers) : undefined
       const color = dominantMeta?.color || DEFAULT_CLUSTER_COLOR
       const size = count < 10 ? 40 : count < 50 ? 50 : 60
@@ -153,7 +155,7 @@ const createClusterRenderer = (selectedTypeIds: string[]): Renderer => {
         position,
         content: div,
         zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count
-      })
+      }) as Marker
     }
   }
 }
@@ -171,7 +173,7 @@ const applyMapPadding = (map: google.maps.Map) => {
   map.set('padding', MAP_UI_PADDING)
 }
 
-export default function Map({ objects, loading, language, selectedTypeIds }: MapProps) {
+export default function AtlasMap({ objects, loading, language, selectedTypeIds }: MapProps) {
   const mapRef = useRef<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
   const markersRef = useRef<MarkerWithMeta[]>([])
