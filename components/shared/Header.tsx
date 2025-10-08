@@ -1,7 +1,14 @@
 import { AppBar, Toolbar, Typography, Box } from '@mui/material'
 import Link from 'next/link'
+import { Actor } from 'next/font/google'
 import LanguageSwitcher from './LanguageSwitcher'
 import { LanguageCode, THEME_COLORS } from '@/lib/constants'
+
+const actorFont = Actor({
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 interface HeaderProps {
   language: LanguageCode
@@ -38,19 +45,29 @@ export default function Header({ language, onLanguageChange }: HeaderProps) {
             justifyContent: { xs: 'center', sm: 'flex-start' }
           }}
         >
-          <Link href="https://digital-atlas.kz/" aria-label="Digital Atlas homepage">
-            <Box
-              component="img"
-              src="/images/logo.png"
-              alt="Logo"
+          <Link
+            href="https://digital-atlas.kz/"
+            aria-label="Digital Atlas homepage"
+            style={{ textDecoration: 'none' }}
+          >
+            <Typography
+              component="span"
+              className={actorFont.className}
               sx={{
-                height: { xs: 24, sm: 32, md: 40 },
-                width: 'auto'
+                color: 'inherit',
+                display: 'inline-flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: { xs: 'center', sm: 'baseline' },
+                textAlign: { xs: 'center', sm: 'left' },
+                fontSize: { xs: '1.1rem', sm: '1.45rem', md: '1.75rem' },
+                letterSpacing: { xs: '0.06em', sm: '0.12em' },
+                lineHeight: { xs: 1.1, sm: 1.2 },
+                gap: { xs: 0, sm: 0.75 }
               }}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none'
-              }}
-            />
+            >
+              <Box component="span">DIGITAL</Box>
+              <Box component="span">ATLAS</Box>
+            </Typography>
           </Link>
         </Box>
 
