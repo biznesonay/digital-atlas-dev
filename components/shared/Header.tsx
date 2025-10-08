@@ -23,25 +23,44 @@ export default function Header({ language, onLanguageChange }: HeaderProps) {
         zIndex: 1100 
       }}
     >
-      <Toolbar>
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+      <Toolbar
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: { xs: 1, sm: 2 }
+        }}
+      >
+        <Box
+          sx={{
+            flex: { xs: 1, sm: '0 0 auto' },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: { xs: 'center', sm: 'flex-start' }
+          }}
+        >
           <Link href="https://digital-atlas.kz/" aria-label="Digital Atlas homepage">
-            <img
+            <Box
+              component="img"
               src="/images/logo.png"
               alt="Logo"
-              style={{ height: 40, marginRight: 16 }}
+              sx={{
+                height: { xs: 24, sm: 32, md: 40 },
+                width: 'auto'
+              }}
               onError={(e) => {
                 e.currentTarget.style.display = 'none'
               }}
             />
           </Link>
         </Box>
-        
-        <Typography 
-          variant="h6" 
-          component="h1" 
-          sx={{ 
-            flexGrow: 1,
+
+        <Typography
+          variant="h6"
+          component="h1"
+          sx={{
+            flex: { xs: 0, sm: 1 },
+            textAlign: { sm: 'center' },
+            display: { xs: 'none', sm: 'block' },
             fontSize: { xs: '1rem', sm: '1.25rem' },
             whiteSpace: { xs: 'nowrap', sm: 'normal' },
             overflow: { xs: 'hidden', sm: 'visible' },
@@ -50,11 +69,19 @@ export default function Header({ language, onLanguageChange }: HeaderProps) {
         >
           {titles[language]}
         </Typography>
-        
-        <LanguageSwitcher 
-          currentLanguage={language}
-          onLanguageChange={onLanguageChange}
-        />
+
+        <Box
+          sx={{
+            flex: { xs: 1, sm: '0 0 auto' },
+            display: 'flex',
+            justifyContent: 'flex-end'
+          }}
+        >
+          <LanguageSwitcher
+            currentLanguage={language}
+            onLanguageChange={onLanguageChange}
+          />
+        </Box>
       </Toolbar>
     </AppBar>
   )
