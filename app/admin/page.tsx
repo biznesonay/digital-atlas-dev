@@ -1,7 +1,8 @@
-'use client'
+'use client';
 
 import { signIn } from 'next-auth/react'
 import { useState, Suspense } from 'react'
+import type { FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Card,
@@ -29,14 +30,14 @@ export default function AdminLoginPage() {
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
+  const callbackUrl = searchParams?.get('callbackUrl') ?? '/admin/dashboard'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError('')
