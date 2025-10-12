@@ -8,9 +8,10 @@ import { DEFAULT_MAP_OPTIONS, KAZAKHSTAN_BOUNDS, KAZAKHSTAN_CENTER, MAP_UI_PADDI
 import { CircularProgress, Box, Typography } from '@mui/material'
 import MarkerInfo from './MarkerInfo'
 import { createRoot, Root } from 'react-dom/client'
+import type { ApiObject } from '@/lib/types'
 
 interface MapProps {
-  objects: any[]
+  objects: ApiObject[]
   loading: boolean
   language: string
   selectedTypeIds: string[]

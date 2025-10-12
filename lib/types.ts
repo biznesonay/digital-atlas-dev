@@ -56,33 +56,35 @@ export interface ApiObject {
   website: string | null
   googleMapsUrl: string | null
   contactPhones: string[] | null
-  infrastructureType: {
+  type: {
     id: string
     code: string
-    markerColor: string
-    translations: Array<{
-      name: string
-    }>
+    color: string
+    name: string
   }
   region: {
     id: string
     code: string
-    translations: Array<{
-      name: string
-    }>
-  }
-  translations: Array<{
     name: string
-    address: string
+  }
+  name: string
+  address: string
+  directions: Array<{
+    id: string
+    name: string
   }>
-  priorityDirections: Array<{
-    priorityDirection: {
-      id: string
-      translations: Array<{
-        name: string
-      }>
-    }
-  }>
+}
+
+export interface ObjectsApiResponseMeta {
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+
+export interface ObjectsApiResponse {
+  data: ApiObject[]
+  meta: ObjectsApiResponseMeta
 }
 
 // Тип для фильтров
@@ -92,6 +94,8 @@ export interface MapFilters {
   regionIds: string[]
   directionIds: string[]
   lang: 'ru' | 'kz' | 'en'
+  page?: number
+  limit?: number
 }
 
 // Тип для маркера на карте

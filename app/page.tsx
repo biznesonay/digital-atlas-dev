@@ -7,8 +7,16 @@ import { theme } from '@/lib/theme'
 import Header from '@/components/shared/Header'
 import AtlasMap from '@/components/map/Map'
 import FilterPanel from '@/components/map/FilterPanel'
-import { MapFilters, ApiObject } from '@/lib/types'
+import { MapFilters, ApiObject, ObjectsApiResponse } from '@/lib/types'
 import { LanguageCode } from '@/lib/constants'
+
+const DEFAULT_OBJECTS_LIMIT = (() => {
+  const value = Number(process.env.NEXT_PUBLIC_OBJECTS_LIMIT ?? '500')
+  if (!Number.isFinite(value) || value <= 0) {
+    return 500
+  }
+  return Math.floor(value)
+})()
 
 export default function HomePage() {
   const [language, setLanguage] = useState<LanguageCode>('ru')
@@ -17,17 +25,20 @@ export default function HomePage() {
     typeIds: [],
     regionIds: [],
     directionIds: [],
-    lang: 'ru'
+    lang: 'ru',
+    page: 1,
+    limit: DEFAULT_OBJECTS_LIMIT
   })
   const [objects, setObjects] = useState<ApiObject[]>([])
   const [loading, setLoading] = useState(true)
+  const [totalObjects, setTotalObjects] = useState(0)
 
   // Загрузка языка из localStorage
   useEffect(() => {
     const savedLang = localStorage.getItem('language') as LanguageCode
     if (savedLang && ['ru', 'kz', 'en'].includes(savedLang)) {
       setLanguage(savedLang)
-      setFilters(prev => ({ ...prev, lang: savedLang }))
+      setFilters(prev => ({ ...prev, lang: savedLang, page: 1 }))
     }
   }, [])
 
@@ -37,9 +48,12 @@ export default function HomePage() {
 
     const fetchObjects = async () => {
       setLoading(true)
+      setTotalObjects(0)
       try {
         const params = new URLSearchParams()
         params.append('lang', filters.lang)
+        params.append('page', String(filters.page ?? 1))
+        params.append('limit', String(filters.limit ?? DEFAULT_OBJECTS_LIMIT))
 
         if (filters.search) {
           params.append('search', filters.search)
@@ -53,8 +67,9 @@ export default function HomePage() {
           signal: controller.signal
         })
         if (!controller.signal.aborted && response.ok) {
-          const data = await response.json()
+          const data: ObjectsApiResponse = await response.json()
           setObjects(data.data)
+          setTotalObjects(data.meta?.total ?? data.data.length)
         }
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -77,11 +92,23 @@ export default function HomePage() {
   const handleLanguageChange = (lang: LanguageCode) => {
     setLanguage(lang)
     localStorage.setItem('language', lang)
-    setFilters(prev => ({ ...prev, lang }))
+    setFilters(prev => ({ ...prev, lang, page: 1 }))
   }
 
   const handleFilterChange = (newFilters: Partial<MapFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }))
+    setFilters(prev => {
+      const next: MapFilters = { ...prev, ...newFilters }
+
+      if (!('page' in newFilters)) {
+        next.page = 1
+      }
+
+      if (next.limit === undefined || next.limit <= 0) {
+        next.limit = DEFAULT_OBJECTS_LIMIT
+      }
+
+      return next
+    })
   }
 
   const handleResetFilters = () => {
@@ -90,7 +117,9 @@ export default function HomePage() {
       typeIds: [],
       regionIds: [],
       directionIds: [],
-      lang: language
+      lang: language,
+      page: 1,
+      limit: DEFAULT_OBJECTS_LIMIT
     })
   }
 
@@ -114,7 +143,7 @@ export default function HomePage() {
             onFilterChange={handleFilterChange}
             onReset={handleResetFilters}
             language={language}
-            totalObjects={objects.length}
+            totalObjects={totalObjects}
           />
         </div>
       </div>
