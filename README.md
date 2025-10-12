@@ -66,6 +66,10 @@ NEXT_PUBLIC_SUPER_CLUSTER_THRESHOLD=3000
 # Уровень логирования
 LOG_LEVEL=info
 
+# Google reCAPTCHA v2
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY="your-recaptcha-site-key"
+RECAPTCHA_SECRET_KEY="your-recaptcha-secret-key"
+
 # Демонстрационные учетные данные для dev (опционально)
 NEXT_PUBLIC_DEMO_CREDENTIALS="Email: admin@example.com\nПароль: admin123"
 ```
@@ -83,6 +87,13 @@ NEXT_PUBLIC_DEMO_CREDENTIALS="Email: admin@example.com\nПароль: admin123"
 ```bash
 openssl rand -base64 32
 ```
+
+#### Настройка Google reCAPTCHA v2:
+1. Перейдите на [Google reCAPTCHA Admin Console](https://www.google.com/recaptcha/admin)
+2. Создайте сайт, выбрав тип "reCAPTCHA v2" (вариант "Я не робот" checkbox)
+3. Добавьте домены, на которых будет использоваться виджет
+4. Сохраните ключ сайта (Site Key) и секретный ключ (Secret Key)
+5. Укажите значения в переменных окружения `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` и `RECAPTCHA_SECRET_KEY`
 
 ### 3. Настройка базы данных
 
