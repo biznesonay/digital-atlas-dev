@@ -3,9 +3,10 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import LanguageIcon from '@mui/icons-material/Language'
 import PhoneIcon from '@mui/icons-material/Phone'
 import DirectionsIcon from '@mui/icons-material/Directions'
+import type { ApiObject } from '@/lib/types'
 
 interface MarkerInfoProps {
-  object: any
+  object: ApiObject
   language: string
 }
 
@@ -98,10 +99,10 @@ export default function MarkerInfo({ object, language }: MarkerInfoProps) {
               gap: 0.5
             }}
           >
-            {object.directions.map((dir: any) => (
-              <Chip 
-                key={dir.id} 
-                label={dir.name} 
+            {object.directions.map(dir => (
+              <Chip
+                key={dir.id}
+                label={dir.name}
                 size="small" 
                 variant="outlined"
                 sx={{ mb: 0.5 }}
@@ -133,7 +134,7 @@ export default function MarkerInfo({ object, language }: MarkerInfoProps) {
               {t.phones}:
             </Typography>
           </Box>
-          {object.contactPhones.map((phone: string, index: number) => (
+          {object.contactPhones.map((phone, index) => (
             <Typography key={index} variant="body2">
               {phone}
             </Typography>

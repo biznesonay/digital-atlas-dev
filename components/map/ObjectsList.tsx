@@ -22,7 +22,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 import LaunchIcon from '@mui/icons-material/Launch'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-import { MapFilters } from '@/lib/types'
+import { MapFilters, ApiObject, ObjectsApiResponse } from '@/lib/types'
 
 interface ObjectsListProps {
   open: boolean
@@ -31,9 +31,18 @@ interface ObjectsListProps {
   filters: MapFilters
 }
 
+const DEFAULT_OBJECTS_LIMIT = (() => {
+  const value = Number(process.env.NEXT_PUBLIC_OBJECTS_LIMIT ?? '500')
+  if (!Number.isFinite(value) || value <= 0) {
+    return 500
+  }
+  return Math.floor(value)
+})()
+
 export default function ObjectsList({ open, onClose, language, filters }: ObjectsListProps) {
-  const [objects, setObjects] = useState<any[]>([])
+  const [objects, setObjects] = useState<ApiObject[]>([])
   const [loading, setLoading] = useState(false)
+  const [total, setTotal] = useState(0)
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
 
@@ -46,7 +55,8 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
       region: 'Регион',
       directions: 'Направления',
       website: 'Сайт',
-      map: 'Карта'
+      map: 'Карта',
+      limited: (displayed: number, total: number) => `Показаны первые ${displayed} из ${total} объектов`
     },
     kz: {
       title: 'Объектілер тізімі',
@@ -56,7 +66,8 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
       region: 'Аймақ',
       directions: 'Бағыттар',
       website: 'Сайт',
-      map: 'Карта'
+      map: 'Карта',
+      limited: (displayed: number, total: number) => `Алғашқы ${displayed} объектіден ${total} көрсетілді`
     },
     en: {
       title: 'Objects List',
@@ -66,7 +77,8 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
       region: 'Region',
       directions: 'Directions',
       website: 'Website',
-      map: 'Map'
+      map: 'Map',
+      limited: (displayed: number, total: number) => `Showing first ${displayed} of ${total} objects`
     }
   }
 
@@ -80,22 +92,26 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
 
   const fetchObjects = async () => {
     setLoading(true)
+    setTotal(0)
     try {
       const params = new URLSearchParams()
       params.append('lang', filters.lang)
-      
+      params.append('page', String(filters.page ?? 1))
+      params.append('limit', String(filters.limit ?? DEFAULT_OBJECTS_LIMIT))
+
       if (filters.search) {
         params.append('search', filters.search)
       }
-      
+
       filters.typeIds.forEach(id => params.append('typeIds[]', id))
       filters.regionIds.forEach(id => params.append('regionIds[]', id))
       filters.directionIds.forEach(id => params.append('directionIds[]', id))
       
       const response = await fetch(`/api/objects?${params.toString()}`)
       if (response.ok) {
-        const data = await response.json()
+        const data: ObjectsApiResponse = await response.json()
         setObjects(data.data)
+        setTotal(data.meta?.total ?? data.data.length)
       }
     } catch (error) {
       console.error('Error fetching objects:', error)
@@ -118,7 +134,7 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
       }}
     >
       <DialogTitle sx={{ m: 0, p: 2 }}>
-        {t.title} ({objects.length})
+        {t.title} ({total})
         <IconButton
           aria-label="close"
           onClick={onClose}
@@ -145,12 +161,20 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
             </Typography>
           </Box>
         ) : (
-          <List>
-            {objects.map((object, index) => (
-              <div key={object.id}>
-                <ListItem sx={{ px: 3, py: 2 }}>
-                  <ListItemText
-                    disableTypography
+          <>
+            {total > objects.length && (
+              <Box px={3} py={1}>
+                <Typography variant="caption" color="text.secondary">
+                  {t.limited(objects.length, total)}
+                </Typography>
+              </Box>
+            )}
+            <List>
+              {objects.map((object, index) => (
+                <div key={object.id}>
+                  <ListItem sx={{ px: 3, py: 2 }}>
+                    <ListItemText
+                      disableTypography
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <Typography variant="subtitle1" fontWeight="bold">
@@ -183,10 +207,10 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
                             {t.region}: {object.region.name}
                           </Typography>
                         )}
-                        
+
                         {object.directions && object.directions.length > 0 && (
                           <Box sx={{ mt: 1 }}>
-                            {object.directions.map((dir: any) => (
+                            {object.directions.map((dir) => (
                               <Chip
                                 key={dir.id}
                                 label={dir.name}
@@ -232,9 +256,10 @@ export default function ObjectsList({ open, onClose, language, filters }: Object
                   </ListItemSecondaryAction>
                 </ListItem>
                 {index < objects.length - 1 && <Divider variant="inset" component="li" />}
-              </div>
-            ))}
-          </List>
+                </div>
+              ))}
+            </List>
+          </>
         )}
       </DialogContent>
     </Dialog>

@@ -152,7 +152,7 @@ export default function FilterPanel({
       }
 
       const timeout = setTimeout(async () => {
-        onFilterChange({ search: value })
+        onFilterChange({ search: value, page: 1 })
         if (value) {
           try {
             const opts = await fetchObjectSuggestions(value, filters.lang)
@@ -206,26 +206,26 @@ export default function FilterPanel({
     const newTypeIds = filters.typeIds.includes(typeId)
       ? filters.typeIds.filter(id => id !== typeId)
       : [...filters.typeIds, typeId]
-    onFilterChange({ typeIds: newTypeIds })
+    onFilterChange({ typeIds: newTypeIds, page: 1 })
   }
 
   const handleRegionToggle = (regionId: string) => {
     const newRegionIds = filters.regionIds.includes(regionId)
       ? filters.regionIds.filter(id => id !== regionId)
       : [...filters.regionIds, regionId]
-    onFilterChange({ regionIds: newRegionIds })
+    onFilterChange({ regionIds: newRegionIds, page: 1 })
   }
 
   const handleDirectionToggle = (directionId: string) => {
     const newDirectionIds = filters.directionIds.includes(directionId)
       ? filters.directionIds.filter(id => id !== directionId)
       : [...filters.directionIds, directionId]
-    onFilterChange({ directionIds: newDirectionIds })
+    onFilterChange({ directionIds: newDirectionIds, page: 1 })
   }
 
   const handleClearSearch = () => {
     setSearchInput('')
-    onFilterChange({ search: '' })
+    onFilterChange({ search: '', page: 1 })
     setSuggestions([])
     setSearchTimeout((prevTimeout) => {
       if (prevTimeout) {
@@ -326,7 +326,7 @@ export default function FilterPanel({
               onChange={(_e, value) => {
                 if (typeof value === 'string') {
                   setSearchInput(value)
-                  onFilterChange({ search: value })
+                  onFilterChange({ search: value, page: 1 })
                   setSuggestions([])
                   latestQueryRef.current = value
                 }
