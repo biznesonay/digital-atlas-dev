@@ -17,17 +17,11 @@ export interface ObjectSuggestion {
 export async function fetchObjectSuggestions(query: string): Promise<ObjectSuggestion[]> {
   if (!query.trim()) return []
 
-  const baseUrl = process.env.APP_URL
-  if (!baseUrl) {
-    console.error('fetchObjectSuggestions error: APP_URL environment variable is not configured')
-    return []
-  }
-
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
   const params = new URLSearchParams({ query })
 
   try {
-    const url = new URL(`/api/objects/suggestions?${params.toString()}`, baseUrl)
-    const res = await fetch(url.toString())
+    const res = await fetch(`${baseUrl}/api/objects/suggestions?${params.toString()}`)
     if (!res.ok) {
       throw new Error('Failed to fetch object suggestions')
     }
