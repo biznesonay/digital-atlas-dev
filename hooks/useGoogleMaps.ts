@@ -6,9 +6,28 @@ const REGION_BY_LANGUAGE: Record<string, string> = {
   en: 'US'
 }
 
+const DEFAULT_LANGUAGE = 'en'
+
 let loader: Loader | null = null
 let loadPromise: Promise<typeof google> | null = null
 let initializedLanguage: string | null = null
+
+const getScriptId = (lang: string) => `google-maps-sdk-${lang}`
+
+function resetLoaderState() {
+  if (initializedLanguage && typeof document !== 'undefined') {
+    const existingScript = document.getElementById(getScriptId(initializedLanguage))
+    existingScript?.remove()
+  }
+
+  if (typeof window !== 'undefined' && (window as any).google) {
+    delete (window as any).google
+  }
+
+  loader = null
+  loadPromise = null
+  initializedLanguage = null
+}
 
 export type GoogleMapsLoadArgs = {
   language: string
@@ -24,13 +43,17 @@ export async function loadGoogleMaps({ language }: GoogleMapsLoadArgs): Promise<
     throw new Error('Google Maps API key is missing (NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)')
   }
 
-  const normalizedLanguage = initializedLanguage ?? language ?? 'en'
+  const normalizedLanguage = (language || DEFAULT_LANGUAGE).toLowerCase()
+
+  if (initializedLanguage && normalizedLanguage !== initializedLanguage) {
+    resetLoaderState()
+  }
 
   if (!loader) {
     initializedLanguage = normalizedLanguage
 
     loader = new Loader({
-      id: 'google-maps-sdk',
+      id: getScriptId(normalizedLanguage),
       apiKey,
       version: 'weekly',
       libraries: ['marker'],
