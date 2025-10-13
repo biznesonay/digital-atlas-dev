@@ -1,3 +1,5 @@
+'use client'
+
 const DEFAULT_LANGUAGE = 'en'
 
 const GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE: Record<string, string> = {
