@@ -190,19 +190,35 @@ export default function AtlasMap({ objects, loading, language, selectedTypeIds }
     if (!apiKey) return
 
     let isMounted = true
-
-    setMapError(null)
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null
+    let retryCount = 0
+    const maxRetries = 3
 
     const normalizedMapId = mapId || undefined
 
-    loadGoogleMaps({ language })
-      .then(() => {
-        if (!isMounted || !mapContainerRef.current) return
+    const loadMap = async () => {
+      if (!isMounted) {
+        return
+      }
 
-        if (!(window as any).google || !(window as any).google.maps) {
-          setMapError('Google Maps SDK not available')
+      const attempt = retryCount + 1
+
+      try {
+        setMapError(null)
+        console.log(`[Map] Starting to load Google Maps for language: ${language}. Attempt ${attempt}/${maxRetries}`)
+
+        await loadGoogleMaps({ language })
+
+        if (!isMounted || !mapContainerRef.current) {
+          console.warn('[Map] Component unmounted or container missing before map initialization completed')
           return
         }
+
+        if (!(window as any).google || !(window as any).google.maps) {
+          throw new Error('Google Maps SDK not available after loading')
+        }
+
+        console.log('[Map] Creating map instance')
 
         const mapOptions: google.maps.MapOptions = {
           ...DEFAULT_MAP_OPTIONS,
@@ -229,15 +245,39 @@ export default function AtlasMap({ objects, loading, language, selectedTypeIds }
             infoWindowRootRef.current = null
           }
         })
+
+        console.log('[Map] Google Maps SDK initialized successfully')
         setMapReady(true)
-      })
-      .catch(err => {
-        console.error('Failed to load Google Maps. Possible network issue or invalid API key.', err)
-        setMapError('Failed to load Google Maps. Please check your network connection or API key.')
-      })
+        retryCount = 0
+      } catch (error) {
+        console.error(`[Map] Failed to initialize Google Maps on attempt ${attempt}`, error)
+
+        if (isMounted && attempt < maxRetries) {
+          retryCount += 1
+          const delay = 1000 * attempt
+          console.log(`[Map] Retrying to load Google Maps in ${delay}ms (retry ${retryCount}/${maxRetries - 1})`)
+          retryTimeout = setTimeout(() => {
+            if (isMounted) {
+              retryTimeout = null
+              loadMap()
+            }
+          }, delay)
+        } else if (isMounted) {
+          setMapError('Failed to load Google Maps. Please refresh the page or try again later.')
+        }
+      }
+    }
+
+    loadMap()
 
     return () => {
       isMounted = false
+
+      if (retryTimeout) {
+        clearTimeout(retryTimeout)
+        retryTimeout = null
+      }
+
       markersRef.current.forEach(marker => {
         MarkerUtils.setMap(marker, null)
       })
@@ -385,7 +425,18 @@ export default function AtlasMap({ objects, loading, language, selectedTypeIds }
 
   if (mapError) {
     return (
-      <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          p: 2
+        }}
+      >
         <Typography>{mapError}</Typography>
       </Box>
     )

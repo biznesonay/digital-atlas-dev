@@ -21,23 +21,23 @@ export default function LanguageSwitcher({
       }
 
       const params = new URLSearchParams(window.location.search)
-      const currentLangParam = params.get('lang') as LanguageCode | null
+      const currentLangParam = (params.get('lang') as LanguageCode | null) ?? currentLanguage
 
-      if (currentLangParam === newLanguage) {
+      if (currentLangParam === newLanguage || currentLanguage === newLanguage) {
+        console.log('[LanguageSwitcher] Language is already set to', newLanguage)
         return
       }
 
+      console.log('[LanguageSwitcher] Changing language from', currentLangParam ?? currentLanguage, 'to', newLanguage)
+
       params.set('lang', newLanguage)
-
-      const queryString = params.toString()
-      const search = queryString ? `?${queryString}` : ''
-      const hash = window.location.hash ?? ''
-
-      window.location.href = `${window.location.pathname}${search}${hash}`
+      const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`
 
       onLanguageChange?.(newLanguage)
+
+      window.location.href = newUrl
     },
-    [onLanguageChange]
+    [currentLanguage, onLanguageChange]
   )
 
   return (
@@ -63,6 +63,7 @@ export default function LanguageSwitcher({
           className={currentLanguage === lang.code ? 'active' : ''}
           onClick={() => handleLanguageChange(lang.code as LanguageCode)}
           title={lang.name}
+          disabled={currentLanguage === lang.code}
         >
           <Image
             src={lang.iconSrc}
