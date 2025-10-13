@@ -1,8 +1,4 @@
-import { Loader } from '@googlemaps/js-api-loader'
-
 const DEFAULT_LANGUAGE = 'en'
-const MAX_LOAD_ATTEMPTS = 3
-const BASE_RETRY_DELAY_MS = 500
 
 const GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE: Record<string, string> = {
   ru: 'ru',
@@ -16,11 +12,12 @@ const REGION_BY_LANGUAGE: Record<string, string> = {
   en: 'US'
 }
 
-const loaders: Record<string, Loader> = {}
-const loadPromises: Record<string, Promise<typeof google> | null> = {}
-const loadAttempts: Record<string, number> = {}
+let currentLanguage: string | null = null
+let loadPromise: Promise<typeof google> | null = null
 
-const getScriptId = (lang: string) => `google-maps-sdk-${lang}`
+export type GoogleMapsLoadArgs = {
+  language: string
+}
 
 export function removeAllGoogleMapsScripts() {
   if (typeof document === 'undefined') {
@@ -37,13 +34,23 @@ export function removeAllGoogleMapsScripts() {
     style.remove()
   })
 
-  if (typeof window !== 'undefined' && (window as any).google) {
-    delete (window as any).google
+  if (typeof window !== 'undefined') {
+    if ((window as typeof window & { google?: typeof google }).google) {
+      delete (window as any).google
+    }
+
+    if ((window as any).google_map_tiles) {
+      delete (window as any).google_map_tiles
+    }
   }
 }
 
-export type GoogleMapsLoadArgs = {
-  language: string
+const resolveGoogleLanguage = (language: string) => {
+  const normalized = (language || DEFAULT_LANGUAGE).toLowerCase()
+  return (
+    GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE[normalized] ??
+    GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE[DEFAULT_LANGUAGE]
+  )
 }
 
 export async function loadGoogleMaps({ language }: GoogleMapsLoadArgs): Promise<typeof google> {
@@ -57,82 +64,73 @@ export async function loadGoogleMaps({ language }: GoogleMapsLoadArgs): Promise<
   }
 
   const normalizedLanguage = (language || DEFAULT_LANGUAGE).toLowerCase()
-  const googleLanguage =
-    GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE[normalizedLanguage] ?? GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE[DEFAULT_LANGUAGE]
+  const googleLanguage = resolveGoogleLanguage(normalizedLanguage)
+  const region = REGION_BY_LANGUAGE[googleLanguage] ?? 'US'
 
-  const existingLanguages = Object.keys(loadPromises).filter(key => loadPromises[key])
-
-  if (existingLanguages.length > 0 && !loadPromises[googleLanguage]) {
+  if (currentLanguage && currentLanguage !== normalizedLanguage) {
     console.log(
-      `[useGoogleMaps] Language switch detected from [${existingLanguages.join(', ')}] to "${googleLanguage}". Resetting Google Maps scripts.`
+      `[GoogleMaps] Language switch detected from ${currentLanguage} to ${normalizedLanguage}. Reloading page.`
     )
-    removeAllGoogleMapsScripts()
-    existingLanguages.forEach(existingLanguage => {
-      delete loaders[existingLanguage]
-      delete loadPromises[existingLanguage]
-      delete loadAttempts[existingLanguage]
+    const url = new URL(window.location.href)
+    url.searchParams.set('lang', normalizedLanguage)
+    window.location.href = url.toString()
+    return new Promise(() => {
+      /* wait for reload */
     })
   }
 
-  if (!loaders[googleLanguage]) {
-    console.log(`[useGoogleMaps] Creating loader for language "${googleLanguage}"`)
-    loaders[googleLanguage] = new Loader({
-      id: getScriptId(googleLanguage),
-      apiKey,
-      version: 'weekly',
-      libraries: ['marker'],
-      language: googleLanguage,
-      region: REGION_BY_LANGUAGE[googleLanguage] ?? 'US'
-    })
+  if ((window as any).google?.maps) {
+    currentLanguage = normalizedLanguage
+    return window.google
   }
 
-  if (!loadPromises[googleLanguage]) {
-    loadAttempts[googleLanguage] = 0
+  if (!loadPromise) {
+    currentLanguage = normalizedLanguage
 
-    loadPromises[googleLanguage] = (async () => {
-      while (loadAttempts[googleLanguage] < MAX_LOAD_ATTEMPTS) {
-        const attempt = loadAttempts[googleLanguage] + 1
-        loadAttempts[googleLanguage] = attempt
-
-        console.log(
-          `[useGoogleMaps] Attempt ${attempt}/${MAX_LOAD_ATTEMPTS} to load Google Maps for language "${googleLanguage}"`
-        )
-
-        try {
-          await loaders[googleLanguage].load()
-
-          if (!(window as any).google) {
-            throw new Error('Google Maps SDK did not expose the global google object')
-          }
-
-          console.log(`[useGoogleMaps] Successfully loaded Google Maps for language "${googleLanguage}"`)
-          delete loadAttempts[googleLanguage]
-          return window.google
-        } catch (error) {
-          console.error(
-            `[useGoogleMaps] Failed to load Google Maps on attempt ${attempt} for language "${googleLanguage}"`,
-            error
-          )
-
-          if (attempt >= MAX_LOAD_ATTEMPTS) {
-            console.error(
-              `[useGoogleMaps] Exhausted all attempts to load Google Maps for language "${googleLanguage}". Resetting loader state.`
-            )
-            removeAllGoogleMapsScripts()
-            delete loaders[googleLanguage]
-            loadPromises[googleLanguage] = null
-            delete loadAttempts[googleLanguage]
-            throw error
-          }
-
-          const delay = BASE_RETRY_DELAY_MS * attempt
-          await new Promise(resolve => setTimeout(resolve, delay))
-        }
+    loadPromise = new Promise<typeof google>((resolve, reject) => {
+      if ((window as any).google?.maps) {
+        resolve(window.google)
+        return
       }
 
-      throw new Error(`Failed to load Google Maps for language "${googleLanguage}"`)
-    })()
+      console.log(`[GoogleMaps] Loading Google Maps for language ${googleLanguage}`)
+
+      const scriptUrl =
+        `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker&language=${googleLanguage}&region=${region}&loading=async`
+
+      const existingScript = document.querySelector<HTMLScriptElement>('script[data-google-maps-loader="true"]')
+      if (existingScript) {
+        existingScript.remove()
+      }
+
+      const script = document.createElement('script')
+      script.src = scriptUrl
+      script.async = true
+      script.defer = true
+      script.dataset.googleMapsLoader = 'true'
+      script.dataset.googleMapsLanguage = googleLanguage
+
+      script.onload = () => {
+        if ((window as any).google?.maps) {
+          console.log(`[GoogleMaps] Successfully loaded Google Maps for language ${googleLanguage}`)
+          resolve(window.google)
+          return
+        }
+
+        loadPromise = null
+        reject(new Error('Google Maps SDK did not expose the global google object'))
+      }
+
+      script.onerror = event => {
+        console.error('[GoogleMaps] Failed to load Google Maps SDK', event)
+        script.remove()
+        loadPromise = null
+        reject(new Error('Failed to load Google Maps SDK'))
+      }
+
+      document.head.appendChild(script)
+    })
   }
 
-  return loadPromises[googleLanguage] as Promise<typeof google>
+  return loadPromise
 }
