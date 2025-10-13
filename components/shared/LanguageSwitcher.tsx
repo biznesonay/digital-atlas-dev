@@ -1,19 +1,48 @@
+'use client'
+
+import { useCallback } from 'react'
 import { Button, ButtonGroup } from '@mui/material'
 import Image from 'next/image'
 import { SUPPORTED_LANGUAGES, LanguageCode } from '@/lib/constants'
 
 interface LanguageSwitcherProps {
   currentLanguage: LanguageCode
-  onLanguageChange: (lang: LanguageCode) => void
+  onLanguageChange?: (lang: LanguageCode) => void
 }
 
-export default function LanguageSwitcher({ 
-  currentLanguage, 
-  onLanguageChange 
+export default function LanguageSwitcher({
+  currentLanguage,
+  onLanguageChange
 }: LanguageSwitcherProps) {
+  const handleLanguageChange = useCallback(
+    (newLanguage: LanguageCode) => {
+      if (typeof window === 'undefined') {
+        return
+      }
+
+      const params = new URLSearchParams(window.location.search)
+      const currentLangParam = params.get('lang') as LanguageCode | null
+
+      if (currentLangParam === newLanguage) {
+        return
+      }
+
+      params.set('lang', newLanguage)
+
+      const queryString = params.toString()
+      const search = queryString ? `?${queryString}` : ''
+      const hash = window.location.hash ?? ''
+
+      window.location.href = `${window.location.pathname}${search}${hash}`
+
+      onLanguageChange?.(newLanguage)
+    },
+    [onLanguageChange]
+  )
+
   return (
-    <ButtonGroup 
-      variant="contained" 
+    <ButtonGroup
+      variant="contained"
       size="small"
       sx={{ 
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -32,7 +61,7 @@ export default function LanguageSwitcher({
         <Button
           key={lang.code}
           className={currentLanguage === lang.code ? 'active' : ''}
-          onClick={() => onLanguageChange(lang.code as LanguageCode)}
+          onClick={() => handleLanguageChange(lang.code as LanguageCode)}
           title={lang.name}
         >
           <Image

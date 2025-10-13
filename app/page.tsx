@@ -8,7 +8,7 @@ import Header from '@/components/shared/Header'
 import AtlasMap from '@/components/map/Map'
 import FilterPanel from '@/components/map/FilterPanel'
 import { MapFilters, ApiObject, ObjectsApiResponse } from '@/lib/types'
-import { LanguageCode } from '@/lib/constants'
+import { LanguageCode, SUPPORTED_LANGUAGES } from '@/lib/constants'
 
 const DEFAULT_OBJECTS_LIMIT = (() => {
   const value = Number(process.env.NEXT_PUBLIC_OBJECTS_LIMIT ?? '500')
@@ -33,12 +33,35 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [totalObjects, setTotalObjects] = useState(0)
 
-  // Загрузка языка из localStorage
+  // Инициализация языка из query параметров или localStorage
   useEffect(() => {
-    const savedLang = localStorage.getItem('language') as LanguageCode
-    if (savedLang && ['ru', 'kz', 'en'].includes(savedLang)) {
-      setLanguage(savedLang)
-      setFilters(prev => ({ ...prev, lang: savedLang, page: 1 }))
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const supportedLanguageCodes = SUPPORTED_LANGUAGES.map(lang => lang.code) as LanguageCode[]
+    const isSupportedLanguage = (value: string | null): value is LanguageCode =>
+      typeof value === 'string' && supportedLanguageCodes.includes(value as LanguageCode)
+
+    const params = new URLSearchParams(window.location.search)
+    const urlLang = params.get('lang')
+    const storedLang = localStorage.getItem('language')
+
+    const nextLanguage: LanguageCode =
+      (isSupportedLanguage(urlLang) ? urlLang : null) ??
+      (isSupportedLanguage(storedLang) ? storedLang : null) ??
+      'ru'
+
+    setLanguage(nextLanguage)
+    setFilters(prev => ({ ...prev, lang: nextLanguage, page: 1 }))
+    localStorage.setItem('language', nextLanguage)
+
+    if (urlLang !== nextLanguage) {
+      params.set('lang', nextLanguage)
+      const queryString = params.toString()
+      const search = queryString ? `?${queryString}` : ''
+      const hash = window.location.hash ?? ''
+      window.history.replaceState(null, '', `${window.location.pathname}${search}${hash}`)
     }
   }, [])
 
@@ -89,12 +112,6 @@ export default function HomePage() {
     }
   }, [filters])
 
-  const handleLanguageChange = (lang: LanguageCode) => {
-    setLanguage(lang)
-    localStorage.setItem('language', lang)
-    setFilters(prev => ({ ...prev, lang, page: 1 }))
-  }
-
   const handleFilterChange = (newFilters: Partial<MapFilters>) => {
     setFilters(prev => {
       const next: MapFilters = { ...prev, ...newFilters }
@@ -127,10 +144,7 @@ export default function HomePage() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Header 
-          language={language} 
-          onLanguageChange={handleLanguageChange}
-        />
+        <Header language={language} />
         <div style={{ flex: 1, position: 'relative' }}>
           <AtlasMap
             objects={objects}
@@ -150,3 +164,4 @@ export default function HomePage() {
     </ThemeProvider>
   )
 }
+
