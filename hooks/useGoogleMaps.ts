@@ -1,12 +1,18 @@
 import { Loader } from '@googlemaps/js-api-loader'
 
-const REGION_BY_LANGUAGE: Record<string, string> = {
-  ru: 'RU',
-  kz: 'KZ',
-  en: 'US'
+const DEFAULT_LANGUAGE = 'en'
+
+const GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE: Record<string, string> = {
+  ru: 'ru',
+  kz: 'kk',
+  en: 'en'
 }
 
-const DEFAULT_LANGUAGE = 'en'
+const REGION_BY_LANGUAGE: Record<string, string> = {
+  ru: 'RU',
+  kk: 'KZ',
+  en: 'US'
+}
 
 let loader: Loader | null = null
 let loadPromise: Promise<typeof google> | null = null
@@ -44,21 +50,23 @@ export async function loadGoogleMaps({ language }: GoogleMapsLoadArgs): Promise<
   }
 
   const normalizedLanguage = (language || DEFAULT_LANGUAGE).toLowerCase()
+  const googleLanguage =
+    GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE[normalizedLanguage] ?? GOOGLE_MAPS_LANGUAGE_BY_APP_LANGUAGE[DEFAULT_LANGUAGE]
 
-  if (initializedLanguage && normalizedLanguage !== initializedLanguage) {
+  if (initializedLanguage && googleLanguage !== initializedLanguage) {
     resetLoaderState()
   }
 
   if (!loader) {
-    initializedLanguage = normalizedLanguage
+    initializedLanguage = googleLanguage
 
     loader = new Loader({
-      id: getScriptId(normalizedLanguage),
+      id: getScriptId(googleLanguage),
       apiKey,
       version: 'weekly',
       libraries: ['marker'],
-      language: normalizedLanguage,
-      region: REGION_BY_LANGUAGE[normalizedLanguage] ?? 'US'
+      language: googleLanguage,
+      region: REGION_BY_LANGUAGE[googleLanguage] ?? 'US'
     })
   }
 
