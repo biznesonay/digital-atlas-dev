@@ -8,25 +8,25 @@ datasource db {
 }
 
 model Object {
-  id                   String    @id @default(uuid())
+  id                   String   @id @default(uuid())
   infrastructureTypeId String
   regionId             String
   createdById          String?
-  isPublished          Boolean   @default(false)
+  isPublished          Boolean  @default(false)
   latitude             Float?
   longitude            Float?
   googleMapsUrl        String?
   website              String?
-  contactPhones        Json?     // JSON array of strings
+  contactPhones        Json? // JSON array of strings
   geocodingStatus      String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   translations       ObjectTranslation[]
   priorityDirections ObjectPriorityDirection[]
-  infrastructureType InfrastructureType       @relation(fields: [infrastructureTypeId], references: [id])
-  region             Region                   @relation(fields: [regionId], references: [id])
-  createdBy          User?                    @relation(fields: [createdById], references: [id])
+  infrastructureType InfrastructureType        @relation(fields: [infrastructureTypeId], references: [id])
+  region             Region                    @relation(fields: [regionId], references: [id])
+  createdBy          User?                     @relation(fields: [createdById], references: [id])
 
   @@index([regionId])
   @@index([infrastructureTypeId])
@@ -37,7 +37,7 @@ model Object {
 model ObjectTranslation {
   id           String  @id @default(uuid())
   objectId     String
-  languageCode String  // ru/kz/en
+  languageCode String // ru/kz/en
   name         String  @db.VarChar(1000)
   address      String  @db.VarChar(1000)
   isPublished  Boolean @default(false)
@@ -128,7 +128,7 @@ model User {
   emailVerified DateTime?
   createdAt     DateTime  @default(now())
 
-  objects       Object[]
+  objects Object[]
 }
 
 enum Role {
