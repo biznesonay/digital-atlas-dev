@@ -16,26 +16,24 @@ export default function LanguageSwitcher({
 }: LanguageSwitcherProps) {
   const handleLanguageChange = useCallback(
     (newLanguage: LanguageCode) => {
-      if (typeof window === 'undefined') {
-        return
-      }
-
-      const params = new URLSearchParams(window.location.search)
-      const currentLangParam = (params.get('lang') as LanguageCode | null) ?? currentLanguage
-
-      if (currentLangParam === newLanguage || currentLanguage === newLanguage) {
+      if (currentLanguage === newLanguage) {
         console.log('[LanguageSwitcher] Language is already set to', newLanguage)
         return
       }
 
-      console.log('[LanguageSwitcher] Changing language from', currentLangParam ?? currentLanguage, 'to', newLanguage)
+      if (typeof window === 'undefined') {
+        return
+      }
 
-      params.set('lang', newLanguage)
-      const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`
+      console.log('[LanguageSwitcher] Changing language to', newLanguage)
+
+      const url = new URL(window.location.href)
+      url.searchParams.set('lang', newLanguage)
+
+      // КРИТИЧНО: Полная перезагрузка страницы
+      window.location.href = url.toString()
 
       onLanguageChange?.(newLanguage)
-
-      window.location.href = newUrl
     },
     [currentLanguage, onLanguageChange]
   )
@@ -44,7 +42,7 @@ export default function LanguageSwitcher({
     <ButtonGroup
       variant="contained"
       size="small"
-      sx={{ 
+      sx={{
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
         '& .MuiButton-root': {
           color: 'white',
