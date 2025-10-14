@@ -1,5 +1,3 @@
-"use client"
-
 import { AppBar, Toolbar, Typography, Box } from '@mui/material'
 import Link from 'next/link'
 import { Actor } from 'next/font/google'
@@ -14,9 +12,10 @@ const actorFont = Actor({
 
 interface HeaderProps {
   language: LanguageCode
+  onLanguageChange: (lang: LanguageCode) => void
 }
 
-export default function Header({ language }: HeaderProps) {
+export default function Header({ language, onLanguageChange }: HeaderProps) {
   const titles = {
     ru: 'Цифровой атлас инновационной инфраструктуры',
     kz: 'Инновациялық инфрақұрылымның цифрлық атласы',
@@ -24,9 +23,9 @@ export default function Header({ language }: HeaderProps) {
   }
 
   return (
-    <AppBar
-      position="sticky"
-      sx={{
+    <AppBar 
+      position="sticky" 
+      sx={{ 
         backgroundColor: THEME_COLORS.headerBg,
         zIndex: 1100 
       }}
@@ -97,6 +96,7 @@ export default function Header({ language }: HeaderProps) {
         >
           <LanguageSwitcher
             currentLanguage={language}
+            onLanguageChange={onLanguageChange}
           />
         </Box>
       </Toolbar>

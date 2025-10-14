@@ -3,7 +3,6 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt"
 import prisma from "./prisma"
 import logger from './logger'
-import { verifyRecaptchaToken } from './recaptcha'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,24 +10,11 @@ export const authOptions: NextAuthOptions = {
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email", placeholder: "admin@example.com" },
-        password: { label: "Пароль", type: "password" },
-        recaptchaToken: { label: "reCAPTCHA Token", type: "text" }
+        password: { label: "Пароль", type: "password" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
-        }
-
-        if (!credentials.recaptchaToken) {
-          logger.warn('Login attempt failed: missing reCAPTCHA token')
-          throw new Error('RECAPTCHA_REQUIRED')
-        }
-
-        const recaptchaResult = await verifyRecaptchaToken(credentials.recaptchaToken)
-
-        if (!recaptchaResult.success) {
-          logger.warn('Login attempt failed: invalid reCAPTCHA', recaptchaResult.error)
-          throw new Error(recaptchaResult.error)
         }
 
         try {
