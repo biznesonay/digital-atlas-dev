@@ -49,6 +49,10 @@ DATABASE_URL="postgresql://user:password@localhost:5432/digital_atlas?schema=pub
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-minimum-32-characters"
 
+# Google reCAPTCHA v2
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY="your-recaptcha-site-key"
+RECAPTCHA_SECRET_KEY="your-recaptcha-secret-key"
+
 # Google Maps API
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
 NEXT_PUBLIC_GOOGLE_MAP_ID="your-map-id"
@@ -83,6 +87,13 @@ NEXT_PUBLIC_DEMO_CREDENTIALS="Email: admin@example.com\nПароль: admin123"
 ```bash
 openssl rand -base64 32
 ```
+
+#### Подключение Google reCAPTCHA v2:
+1. Перейдите в [Google reCAPTCHA Admin Console](https://www.google.com/recaptcha/admin/create).
+2. Создайте новый ключ для "reCAPTCHA v2" (тип "Я не робот" или "Invisible", в зависимости от сценария).
+3. Укажите домены, на которых будет использоваться форма входа админ-панели.
+4. Сохраните **site key** и **secret key**, добавьте их в `.env.local` как `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` и `RECAPTCHA_SECRET_KEY`.
+5. После изменения переменных перезапустите dev-сервер, чтобы фронтенд получил новый `site key`.
 
 ### 3. Настройка базы данных
 

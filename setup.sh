@@ -44,6 +44,10 @@ DATABASE_URL="postgresql://postgres:password@localhost:5432/digital_atlas?schema
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="$(openssl rand -base64 32)"
 
+# Google reCAPTCHA v2
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY="your-recaptcha-site-key"
+RECAPTCHA_SECRET_KEY="your-recaptcha-secret-key"
+
 # Google Maps API
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
 NEXT_PUBLIC_GOOGLE_MAP_ID="your-google-map-id"
@@ -64,7 +68,8 @@ EOL
     echo ""
     echo "⚠️ ВАЖНО: Отредактируйте .env.local и добавьте:"
     echo "   1. Правильные данные для подключения к PostgreSQL"
-    echo "   2. Google Maps API ключи и Map ID"
+    echo "   2. Google reCAPTCHA site/secret ключи"
+    echo "   3. Google Maps API ключи и Map ID"
     echo ""
 else
     echo "✅ Файл .env.local найден"

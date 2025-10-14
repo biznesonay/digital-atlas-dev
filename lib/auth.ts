@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt"
 import prisma from "./prisma"
 import logger from './logger'
+import { verifyRecaptcha } from './recaptcha'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,16 +11,29 @@ export const authOptions: NextAuthOptions = {
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email", placeholder: "admin@example.com" },
-        password: { label: "Пароль", type: "password" }
+        password: { label: "Пароль", type: "password" },
+        recaptchaToken: { label: "reCAPTCHA Token", type: "text" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        const email = credentials?.email
+        const password = credentials?.password
+        const recaptchaToken = credentials?.recaptchaToken
+
+        if (!email || !password || !recaptchaToken) {
+          logger.warn('Login attempt failed: missing credentials or reCAPTCHA token')
+          return null
+        }
+
+        const isHuman = await verifyRecaptcha(recaptchaToken)
+
+        if (!isHuman) {
+          logger.warn('Login attempt failed: reCAPTCHA validation failed')
           return null
         }
 
         try {
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: { email }
           })
 
           if (!user) {
@@ -27,7 +41,7 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
+          const isPasswordValid = await bcrypt.compare(password, user.password)
 
           if (!isPasswordValid) {
             logger.warn('Login attempt failed: invalid password')
