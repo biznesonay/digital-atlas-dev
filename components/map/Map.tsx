@@ -138,18 +138,20 @@ const createClusterRenderer = (selectedTypeIds: string[]): Renderer => {
       const { count, position, markers } = cluster
       const dominantMeta = markers ? getDominantMeta(markers) : undefined
       const color = dominantMeta?.color || DEFAULT_CLUSTER_COLOR
-      const size = count < 10 ? 40 : count < 50 ? 50 : 60
+      const size = count < 10 ? 48 : count < 50 ? 60 : 72
+      const fontSize = Math.round(size * 0.35)
 
       const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
-          <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" stroke="white" stroke-width="2"/>
-          <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="14" font-weight="bold">${count}</text>
+          <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 3}" fill="${color}" stroke="white" stroke-width="3"/>
+          <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="${fontSize}" font-weight="bold">${count}</text>
         </svg>
       `
 
       const div = document.createElement('div')
       div.innerHTML = svg
       div.style.cursor = 'pointer'
+      div.style.filter = 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25))'
 
       return new google.maps.marker.AdvancedMarkerElement({
         position,
