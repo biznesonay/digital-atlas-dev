@@ -29,6 +29,27 @@ type MarkerWithMeta = Marker & {
 
 const DEFAULT_CLUSTER_COLOR = '#1976D2'
 
+const lightenHexColor = (hexColor: string, percent: number) => {
+  const normalized = hexColor.replace('#', '')
+  if (!/^([0-9a-f]{6})$/i.test(normalized)) {
+    return hexColor
+  }
+
+  const amount = Math.max(0, Math.min(100, percent)) / 100
+  const r = parseInt(normalized.slice(0, 2), 16)
+  const g = parseInt(normalized.slice(2, 4), 16)
+  const b = parseInt(normalized.slice(4, 6), 16)
+
+  const lighten = (value: number) => {
+    const lightened = Math.round(value + (255 - value) * amount)
+    return Math.max(0, Math.min(255, lightened))
+  }
+
+  const toHex = (value: number) => value.toString(16).padStart(2, '0')
+
+  return `#${toHex(lighten(r))}${toHex(lighten(g))}${toHex(lighten(b))}`
+}
+
 const TYPE_PRIORITY_GROUPS: string[][] = [
   ['TECHNOPARK', 'Технопарк'],
   ['SEZ', 'СЭЗ', 'АЭА'],
@@ -138,20 +159,47 @@ const createClusterRenderer = (selectedTypeIds: string[]): Renderer => {
       const { count, position, markers } = cluster
       const dominantMeta = markers ? getDominantMeta(markers) : undefined
       const color = dominantMeta?.color || DEFAULT_CLUSTER_COLOR
-      const size = count < 10 ? 48 : count < 50 ? 60 : 72
-      const fontSize = Math.round(size * 0.35)
+      const lighterColor = lightenHexColor(color, 18)
+      const size = count < 10 ? 60 : count < 50 ? 76 : 92
+      const fontSize = Math.round(size * 0.36)
+      const borderWidth = Math.max(4, Math.round(size * 0.08))
+      const shadowDy = Math.max(3, Math.round(size * 0.12))
+      const shadowBlur = Math.max(4, Math.round(size * 0.2))
+      const radius = size / 2 - borderWidth / 2
+      const center = size / 2
+      const gradientId = `cluster-gradient-${color.replace(/[^a-z0-9]/gi, '')}-${size}`
+      const shadowId = `cluster-shadow-${color.replace(/[^a-z0-9]/gi, '')}-${size}`
 
       const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
-          <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 3}" fill="${color}" stroke="white" stroke-width="3"/>
-          <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="white" font-size="${fontSize}" font-weight="bold">${count}</text>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true" focusable="false">
+          <defs>
+            <radialGradient id="${gradientId}" cx="50%" cy="40%" r="65%">
+              <stop offset="0%" stop-color="${lighterColor}" />
+              <stop offset="100%" stop-color="${color}" />
+            </radialGradient>
+            <filter id="${shadowId}" x="-50%" y="-50%" width="200%" height="200%">
+              <feOffset dx="0" dy="${shadowDy}" in="SourceAlpha" result="offset" />
+              <feGaussianBlur in="offset" stdDeviation="${shadowBlur}" result="blur" />
+              <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0" result="shadow" />
+              <feMerge>
+                <feMergeNode in="shadow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <g filter="url(#${shadowId})">
+            <circle cx="${center}" cy="${center}" r="${radius}" fill="white" />
+            <circle cx="${center}" cy="${center}" r="${radius - borderWidth}" fill="url(#${gradientId})" />
+          </g>
+          <text x="50%" y="50%" text-anchor="middle" dy=".32em" fill="white" font-size="${fontSize}" font-weight="700">${count}</text>
         </svg>
       `
 
       const div = document.createElement('div')
       div.innerHTML = svg
       div.style.cursor = 'pointer'
-      div.style.filter = 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25))'
+      div.style.display = 'inline-block'
+      div.style.lineHeight = '0'
 
       return new google.maps.marker.AdvancedMarkerElement({
         position,
@@ -299,9 +347,10 @@ export default function AtlasMap({ objects, loading, language, selectedTypeIds }
       markerContent.style.backgroundColor = obj.type?.color || DEFAULT_CLUSTER_COLOR
       markerContent.style.border = '2px solid white'
       markerContent.style.borderRadius = '50%'
-      markerContent.style.height = '16px'
-      markerContent.style.width = '16px'
+      markerContent.style.height = '20px'
+      markerContent.style.width = '20px'
       markerContent.style.boxSizing = 'border-box'
+      markerContent.style.boxShadow = '0 2px 6px rgba(60, 64, 67, 0.3)'
 
       const marker = new google.maps.marker.AdvancedMarkerElement({
         position: { lat: obj.latitude, lng: obj.longitude },
