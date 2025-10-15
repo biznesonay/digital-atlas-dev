@@ -31,7 +31,7 @@ cd digital-atlas
 npm init -y
 
 # Установка всех зависимостей одной командой
-npm install next@14.2.15 react@18.3.1 react-dom@18.3.1 typescript@5.6.3 @react-google-maps/api@2.19.3 @googlemaps/markerclusterer@2.6.1 @mui/material@5.16.7 @mui/icons-material@5.16.7 @emotion/react@11.13.3 @emotion/styled@11.13.0 next-auth@4.24.7 prisma@5.20.0 @prisma/client@5.20.0 zod@3.23.8 bcrypt@5.1.1
+npm install next@14.2.15 react@18.3.1 react-dom@18.3.1 typescript@5.6.3 @react-google-maps/api@2.19.3 @googlemaps/markerclusterer@2.6.1 @mui/material@5.16.7 @mui/icons-material@5.16.7 @emotion/react@11.13.3 @emotion/styled@11.13.0 next-auth@4.24.7 react-google-recaptcha@3.1.0 prisma@5.20.0 @prisma/client@5.20.0 zod@3.23.8 bcrypt@5.1.1
 
 # Установка dev-зависимостей
 npm install --save-dev @types/bcrypt @types/node @types/react @types/react-dom eslint eslint-config-next
