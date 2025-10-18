@@ -1,20 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const BLOCKED_PATHS = [
+  '/wp-content',
+  '/wp-admin',
+  '/wordpress',
+  '.php',
+  '.cgi',
+  '/devicesgateway',
+  '/apply_sec',
+  '/.env',
+  '/config',
+  '/phpmyadmin',
+  '/.git',
+  '/backup',
+]
+
 export function middleware(request: NextRequest) {
   const start = Date.now()
   const { pathname, searchParams } = request.nextUrl
-  
+  const pathnameLower = pathname.toLowerCase()
+
+  const isBlocked = BLOCKED_PATHS.some((path) => pathnameLower.includes(path))
+
+  if (isBlocked) {
+    console.warn(
+      `[SECURITY] Blocked suspicious request: ${pathname} from ${request.ip ?? 'unknown'}`
+    )
+
+    return new NextResponse(null, { status: 404 })
+  }
+
   // Логирование API запросов
   if (pathname.startsWith('/api/')) {
-    console.log(`[API] ${new Date().toISOString()} ${request.method} ${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`)
+    console.log(
+      `[API] ${new Date().toISOString()} ${request.method} ${pathname}${
+        searchParams.toString() ? `?${searchParams.toString()}` : ''
+      }`
+    )
   }
-  
+
   // Логирование админских действий
   if (pathname.startsWith('/admin/')) {
     const sessionToken = request.cookies.get('next-auth.session-token')
-    console.log(`[ADMIN] ${new Date().toISOString()} ${request.method} ${pathname} [Session: ${sessionToken ? 'Active' : 'None'}]`)
+    console.log(
+      `[ADMIN] ${new Date().toISOString()} ${request.method} ${pathname} [Session: ${
+        sessionToken ? 'Active' : 'None'
+      }]`
+    )
   }
-  
+
   // Создание ответа с заголовками производительности и безопасности
   const response = NextResponse.next()
   
